@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GS Log In/Log Out Monitoring</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- SheetJS for Excel Exports -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body class="bg-gray-100 font-sans min-h-screen">
+
+    <!-- TOP NAVIGATION / ROLE SWITCHER -->
+    <nav class="bg-slate-800 text-white p-4 flex justify-between items-center shadow-md">
+        <h1 class="text-xl font-bold tracking-wide">GS Log In/Log Out Monitoring</h1>
+        <div class="flex items-center gap-4">
+            <span class="text-sm text-slate-300">Current View:</span>
+            <select id="roleSwitcher" onchange="switchView(this.value)" class="bg-slate-700 text-white px-3 py-1.5 rounded border border-slate-600 focus:outline-none">
+                <option value="employee">Employee View</option>
+                <option value="admin">Admin View (Hidden Default)</option>
+            </select>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+
+        <!-- ================= EMPLOYEE VIEW ================= -->
+        <div id="employeeView" class="space-y-6">
+            <!-- Log In / Log Out Card -->
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 max-w-md mx-auto">
+                <h2 class="text-lg font-semibold text-gray-800 mb-4 text-center">Employee Attendance Terminal</h2>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Select Your Name</label>
+                        <select id="empSelect" class="w-full p-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"></select>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 pt-2">
+                        <button onclick="handleClockAction('In')" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-3 rounded-lg transition shadow-sm">
+                            Log In
+                        </button>
+                        <button onclick="handleClockAction('Out')" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-medium py-3 rounded-lg transition shadow-sm">
+                            Log Out
+                        </button>
+                    </div>
+                </div>
+
+                <hr class="my-6 border-gray-200">
+
+                <!-- Registration Trigger -->
+                <div class="text-center">
+                    <p class="text-sm text-gray-500 mb-2">Not in the system yet?</p>
+                    <button onclick="toggleModal('registerModal', true)" class="text-blue-600 hover:text-blue-800 text-sm font-semibold underline">
+                        Click here to add your information
+                    </button>
+                </div>
+            </div>
+
+            <!-- Personal Attendance Quick-Check Section -->
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+                    <div>
+                        <h2 class="text-lg font-semibold text-gray-800">My Attendance History</h2>
+                        <p class="text-xs text-gray-500">Select your profile above to filter your personal logs</p>
+                    </div>
+                    <!-- Quick Filter Tabs -->
+                    <div class="flex bg-gray-100 p-1 rounded-lg border border-gray-200 self-stretch sm:self-auto">
+                        <button onclick="filterEmployeeLogs('day')" class="emp-tab-btn px-4 py-1.5 text-sm font-medium rounded-md bg-white shadow-sm text-gray-800">Everyday</button>
+                        <button onclick="filterEmployeeLogs('week')" class="emp-tab-btn px-4 py-1.5 text-sm font-medium rounded-md text-gray-600 hover:text-gray-900">Weekly</button>
+                        <button onclick="filterEmployeeLogs('month')" class="emp-tab-btn px-4 py-1.5 text-sm font-medium rounded-md text-gray-600 hover:text-gray-900">Monthly</button>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200 text-left text-sm">
+                        <thead class="bg-gray-50 text-gray-700 uppercase text-xs font-semibold tracking-wider">
+                            <tr>
+                                <th class="p-3">Date</th>
+                                <th class="p-3">Shift</th>
+                                <th class="p-3">Position</th>
+                                <th class="p-3">Log In</th>
+                                <th class="p-3">Log Out</th>
+                                <th class="p-3">Work Status / Duration</th>
+                                <th class="p-3">OT Hours</th>
+                                <th class="p-3">Undertime</th>
+                            </tr>
+                        </thead>
+                        <tbody id="employeeLogTableBody" class="divide-y divide-gray-200 text-gray-600">
+                            <!-- Populated via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- ================= ADMIN VIEW ================= -->
+        <div id="adminView" class="hidden space-y-6">
+            
+            <!-- Management Controls -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Add/Delete Employee Control panel -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 md:col-span-1">
+                    <h3 class="text-md font-bold text-gray-800 mb-4 uppercase tracking-wider text-xs border-b pb-2">Employee Directory</h3>
+                    
+                    <!-- Quick Add Form -->
+                    <form id="adminAddEmpForm" onsubmit="adminAddEmployee(event)" class="mb-6 space-y-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1">New Employee Name</label>
+                            <input type="text" id="adminNewEmpName" required placeholder="e.g., Juan Dela Cruz" class="w-full p-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1">Shift</label>
+                            <input type="text" id="adminNewEmpShift" required placeholder="e.g., 7:00 AM - 4:00 PM" class="w-full p-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1">Position</label>
+                            <input type="text" id="adminNewEmpPosition" required placeholder="e.g., Logistics Specialist" class="w-full p-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500">
+                        </div>
+                        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 rounded transition">
+                            Add Employee
+                        </button>
+                    </form>
+
+                    <!-- Active List with Delete buttons -->
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-2">Active Rosters</label>
+                        <div id="adminEmpList" class="space-y-1 max-h-64 overflow-y-auto border border-gray-100 p-1 rounded">
+                            <!-- Populated via JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Master Logs Dashboard -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 md:col-span-2 space-y-4">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b pb-4">
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-800">Master Timecards</h3>
+                            <p class="text-xs text-gray-500">Company-wide operational timeline views</p>
+                        </div>
+                        <button onclick="exportToExcel()" class="bg-emerald-700 hover:bg-emerald-800 text-white px-4 py-2 text-sm font-medium rounded-lg transition inline-flex items-center gap-2 shadow-sm">
+                            Spreadsheet Export (.xlsx)
+                        </button>
+                    </div>
+
+                    <!-- Time Filters & Date selectors -->
+                    <div class="flex flex-wrap items-center gap-4 bg-gray-50 p-3 rounded-lg border border-gray-200 text-sm">
+                        <div class="flex bg-white p-1 rounded border">
+                            <button onclick="filterAdminLogs('day')" class="admin-tab-btn px-3 py-1 font-medium rounded bg-slate-700 text-white">Everyday</button>
+                            <button onclick="filterAdminLogs('week')" class="admin-tab-btn px-3 py-1 font-medium rounded text-gray-600">Weekly</button>
+                            <button onclick="filterAdminLogs('month')" class="admin-tab-btn px-3 py-1 font-medium rounded text-gray-600">Monthly</button>
+                        </div>
+                        <input type="date" id="adminDateAnchor" onchange="renderAdminDashboard()" class="p-1 border rounded bg-white text-gray-700 focus:outline-none">
+                    </div>
+
+                    <!-- Main Master Table View -->
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200 text-left text-sm">
+                            <thead class="bg-gray-100 text-gray-700 uppercase text-xs font-bold tracking-wider">
+                                <tr>
+                                    <th class="p-3">Employee</th>
+                                    <th class="p-3">Shift</th>
+                                    <th class="p-3">Position</th>
+                                    <th class="p-3">Date</th>
+                                    <th class="p-3">In</th>
+                                    <th class="p-3">Out</th>
+                                    <th class="p-3">Reg Hours</th>
+                                    <th class="p-3">OT Hours</th>
+                                    <th class="p-3">Undertime</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adminLogTableBody" class="divide-y divide-gray-200 text-gray-600">
+                                <!-- Populated via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- ================= EMPLOYEE REGISTRATION MODAL ================= -->
+    <div id="registerModal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl shadow-lg max-w-md w-full overflow-hidden transform transition-all">
+            <div class="bg-slate-800 p-4 text-white flex justify-between items-center">
+                <h3 class="font-bold">Employee Self-Registration</h3>
+                <button onclick="toggleModal('registerModal', false)" class="text-slate-400 hover:text-white text-xl font-bold">&times;</button>
+            </div>
+            <form onsubmit="handleEmployeeSelfRegister(event)" class="p-6 space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                    <input type="text" id="regEmpName" required placeholder="Firstname Lastname" class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Shift</label>
+                    <input type="text" id="regEmpShift" required placeholder="e.g., 7:00 AM - 3:00 PM" class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Position</label>
+                    <input type="text" id="regEmpPosition" required placeholder="e.g., Support Specialist" class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                </div>
+                <div class="flex justify-end gap-3 pt-2">
+                    <button type="button" onclick="toggleModal('registerModal', false)" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">Cancel</button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition shadow-sm">Save Information</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ================= CORE ARCHITECTURE SCRIPTING ================= -->
+    <script>
+        // Data Structures Initialization using Object Array profiles
+        let employees = JSON.parse(localStorage.getItem('gs_employees_v2')) || [
+            { name: "Juan Dela Cruz", shift: "7:00 AM - 3:00 PM", position: "Data Analyst" },
+            { name: "Maria Santos", shift: "8:00 AM - 5:00 PM", position: "Operations Lead" }
+        ];
+        
+        let logs = JSON.parse(localStorage.getItem('gs_logs_v2')) || [
+            { name: "Juan Dela Cruz", shift: "7:00 AM - 3:00 PM", position: "Data Analyst", date: "2026-06-15", logIn: "07:00", logOut: "17:00", regHours: 8, otHours: 2, undertime: 0 },
+            { name: "Juan Dela Cruz", shift: "7:00 AM - 3:00 PM", position: "Data Analyst", date: "2026-06-16", logIn: "07:00", logOut: "11:00", regHours: 4, otHours: 0, undertime: 4 }
+        ];
+
+        let currentEmpFilterScope = 'day';
+        let currentAdminFilterScope = 'day';
+
+        document.getElementById('adminDateAnchor').value = new Date().toISOString().split('T')[0];
+
+        window.addEventListener('DOMContentLoaded', () => {
+            syncEmployeeDropdowns();
+            renderEmployeeDashboard();
+            renderAdminDashboard();
+            
+            document.getElementById('empSelect').addEventListener('change', () => {
+                renderEmployeeDashboard();
+            });
+        });
+
+        function saveState() {
+            localStorage.setItem('gs_employees_v2', JSON.stringify(employees));
+            localStorage.setItem('gs_logs_v2', JSON.stringify(logs));
+        }
+
+        function syncEmployeeDropdowns() {
+            const select = document.getElementById('empSelect');
+            const adminList = document.getElementById('adminEmpList');
+            
+            select.innerHTML = '';
+            adminList.innerHTML = '';
+
+            employees.sort((a, b) => a.name.localeCompare(b.name)).forEach(emp => {
+                let opt = document.createElement('option');
+                opt.value = emp.name;
+                opt.textContent = `${emp.name} (${emp.position})`;
+                select.appendChild(opt);
+
+                let row = document.createElement('div');
+                row.className = "flex justify-between items-start bg-gray-50 p-2 rounded hover:bg-rose-50 text-sm transition gap-2";
+                row.innerHTML = `
+                    <div class="flex flex-col">
+                        <span class="text-gray-800 font-semibold">${emp.name}</span>
+                        <span class="text-xs text-gray-500">${emp.position} • <span class="italic">${emp.shift}</span></span>
+                    </div>
+                    <button onclick="adminDeleteEmployee('${emp.name}')" type="button" class="text-rose-500 opacity-80 hover:opacity-100 text-xs px-2 py-1 rounded border border-rose-200 bg-white hover:bg-rose-100 transition shadow-xs self-center">Delete</button>
+                `;
+                adminList.appendChild(row);
+            });
+        }
+
+        function switchView(targetRole) {
+            if(targetRole === 'admin') {
+                document.getElementById('adminView').classList.remove('hidden');
+                document.getElementById('employeeView').classList.add('hidden');
+                renderAdminDashboard();
+            } else {
+                document.getElementById('employeeView').classList.remove('hidden');
+                document.getElementById('adminView').classList.add('hidden');
+                renderEmployeeDashboard();
+            }
+        }
+
+        function toggleModal(modalId, show) {
+            document.getElementById(modalId).classList.toggle('hidden', !show);
+        }
+
+        function handleEmployeeSelfRegister(e) {
+            e.preventDefault();
+            const nameInput = document.getElementById('regEmpName').value.trim();
+            const shiftInput = document.getElementById('regEmpShift').value.trim();
+            const posInput = document.getElementById('regEmpPosition').value.trim();
+
+            if(!nameInput || !shiftInput || !posInput) return;
+
+            if(employees.some(emp => emp.name.toLowerCase() === nameInput.toLowerCase())) {
+                alert("This employee profile name configuration already exists.");
+                return;
+            }
+
+            employees.push({ name: nameInput, shift: shiftInput, position: posInput });
+            saveState();
+            syncEmployeeDropdowns();
+            
+            document.getElementById('empSelect').value = nameInput;
+            renderEmployeeDashboard();
+            
+            // Clear inputs
+            document.getElementById('regEmpName').value = '';
+            document.getElementById('regEmpShift').value = '';
+            document.getElementById('regEmpPosition').value = '';
+            
+            toggleModal('registerModal', false);
+            alert(`Profile details mapped successfully for: ${nameInput}`);
+        }
+
+        function adminAddEmployee(e) {
+            e.preventDefault();
+            const name = document.getElementById('adminNewEmpName').value.trim();
+            const shift = document.getElementById('adminNewEmpShift').value.trim();
+            const position = document.getElementById('adminNewEmpPosition').value.trim();
+
+            if(!name || !shift || !position) return;
+
+            if(employees.some(emp => emp.name.toLowerCase() === name.toLowerCase())) {
+                alert("Employee record already exists.");
+                return;
+            }
+
+            employees.push({ name, shift, position });
+            saveState();
+            syncEmployeeDropdowns();
+            
+            document.getElementById('adminNewEmpName').value = '';
+            document.getElementById('adminNewEmpShift').value = '';
+            document.getElementById('adminNewEmpPosition').value = '';
+            renderAdminDashboard();
+        }
+
+        function adminDeleteEmployee(name) {
+            if(confirm(`Are you sure you want to completely erase payroll profiles and data access for ${name}?`)) {
+                employees = employees.filter(emp => emp.name !== name);
+                saveState();
+                syncEmployeeDropdowns();
+                renderAdminDashboard();
+            }
+        }
+
+        function handleClockAction(actionType) {
+            const currentEmployeeName = document.getElementById('empSelect').value;
+            if(!currentEmployeeName) {
+                alert("Please select or register an active operational profile.");
+                return;
+            }
+
+            // Find current structural metrics for profile mappings
+            const profile = employees.find(e => e.name === currentEmployeeName) || { shift: "Not Set", position: "Not Set" };
+
+            const now = new Date();
+            const dateStr = now.toISOString().split('T')[0]; 
+            const timeStr = now.toTimeString().split(' ')[0].substring(0, 5); 
+
+            let existingRecord = logs.find(log => log.name === currentEmployeeName && log.date === dateStr);
+
+            if(actionType === 'In') {
+                if(existingRecord && existingRecord.logIn) {
+                    alert(`${currentEmployeeName} has already checked in for today at ${existingRecord.logIn}.`);
+                    return;
+                }
+                
+                if(!existingRecord) {
+                    existingRecord = { 
+                        name: currentEmployeeName, 
+                        shift: profile.shift,
+                        position: profile.position,
+                        date: dateStr, 
+                        logIn: timeStr, 
+                        logOut: null, 
+                        regHours: 0, 
+                        otHours: 0, 
+                        undertime: 0 
+                    };
+                    logs.push(existingRecord);
+                } else {
+                    existingRecord.logIn = timeStr;
+                    existingRecord.shift = profile.shift;
+                    existingRecord.position = profile.position;
+                }
+                alert(`SUCCESS: Logged IN verified at ${timeStr} for ${currentEmployeeName}`);
+            } 
+            else if(actionType === 'Out') {
+                if(!existingRecord || !existingRecord.logIn) {
+                    alert(`Action Flag Aborted: An explicit tracking timeline for today was not matched for ${currentEmployeeName}.`);
+                    return;
+                }
+                if(existingRecord.logOut && !confirm("Update existing checkout timestamp?")) return;
+
+                existingRecord.logOut = timeStr;
+                existingRecord.shift = profile.shift;
+                existingRecord.position = profile.position;
+                
+                const shiftCalculations = calculateShiftMetrics(existingRecord.logIn, existingRecord.logOut);
+                existingRecord.regHours = shiftCalculations.regHours;
+                existingRecord.otHours = shiftCalculations.otHours;
+                existingRecord.undertime = shiftCalculations.undertime;
+
+                alert(`SUCCESS: Logged OUT verified at ${timeStr}.\nStatus: ${shiftCalculations.summaryText}`);
+            }
+
+            saveState();
+            renderEmployeeDashboard();
+            renderAdminDashboard();
+        }
+
+        function calculateShiftMetrics(timeInStr, timeOutStr) {
+            const [inH, inM] = timeInStr.split(':').map(Number);
+            const [outH, outM] = timeOutStr.split(':').map(Number);
+
+            const totalMinutesWorked = (outH * 60 + outM) - (inH * 60 + inM);
+            const totalHoursWorked = Math.max(0, totalMinutesWorked / 60);
+
+            let regHours = 0;
+            let otHours = 0;
+            let undertime = 0;
+            let summaryText = "";
+
+            if(totalHoursWorked >= 8) {
+                regHours = 8;
+                otHours = Number((totalHoursWorked - 8).toFixed(2));
+                summaryText = `Completed 8.0 hrs plus ${otHours} hrs. OT`;
+            } else {
+                regHours = Number(totalHoursWorked.toFixed(2));
+                undertime = Number((8 - totalHoursWorked).toFixed(2));
+                summaryText = `${regHours} hrs worked, ${undertime} hrs. undertime`;
+            }
+
+            return { regHours, otHours, undertime, summaryText };
+        }
+
+        function getWeekAndMonthBounds(dateObj) {
+            const currentObj = new Date(dateObj);
+            const targetDayStr = currentObj.toISOString().split('T')[0];
+            const dayOfWeek = currentObj.getDay(); 
+            const diffToMonday = currentObj.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
+            const startOfWeek = new Date(currentObj.setDate(diffToMonday));
+            startOfWeek.setHours(0,0,0,0);
+            const endOfWeek = new Date(startOfWeek);
+            endOfWeek.setDate(endOfWeek.getDate() + 6);
+            endOfWeek.setHours(23,59,59,999);
+
+            const startOfMonth = new Date(dateObj.getFullYear(), dateObj.getMonth(), 1);
+            const endOfMonth = new Date(dateObj.getFullYear(), dateObj.getMonth() + 1, 0, 23, 59, 59, 999);
+
+            return { targetDayStr, startOfWeek, endOfWeek, startOfMonth, endOfMonth };
+        }
+
+        function matchesFilterScope(logDateStr, scope, anchorDateStr) {
+            const anchorDate = new Date(anchorDateStr);
+            const checkDate = new Date(logDateStr);
+            const bounds = getWeekAndMonthBounds(anchorDate);
+
+            if(scope === 'day') {
+                return logDateStr === bounds.targetDayStr;
+            } else if(scope === 'week') {
+                return checkDate >= bounds.startOfWeek && checkDate <= bounds.endOfWeek;
+            } else if(scope === 'month') {
+                return checkDate >= bounds.startOfMonth && checkDate <= bounds.endOfMonth;
+            }
+            return true;
+        }
+
+        function filterEmployeeLogs(scope) {
+            currentEmpFilterScope = scope;
+            const tabs = document.querySelectorAll('.emp-tab-btn');
+            tabs.forEach(tab => {
+                if(tab.textContent.toLowerCase() === (scope === 'day' ? 'everyday' : scope === 'week' ? 'weekly' : 'monthly')) {
+                    tab.className = "emp-tab-btn px-4 py-1.5 text-sm font-medium rounded-md bg-white shadow-sm text-gray-800";
+                } else {
+                    tab.className = "emp-tab-btn px-4 py-1.5 text-sm font-medium rounded-md text-gray-600 hover:text-gray-900";
+                }
+            });
+            renderEmployeeDashboard();
+        }
+
+        function renderEmployeeDashboard() {
+            const currentEmployee = document.getElementById('empSelect').value;
+            const tbody = document.getElementById('employeeLogTableBody');
+            tbody.innerHTML = '';
+
+            if(!currentEmployee) {
+                tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-gray-400">Please register or choose an operational profile to pull up tracking histories.</td></tr>`;
+                return;
+            }
+
+            const systemTodayStr = new Date().toISOString().split('T')[0];
+            const filteredLogs = logs.filter(log => log.name === currentEmployee && matchesFilterScope(log.date, currentEmpFilterScope, systemTodayStr));
+
+            if(filteredLogs.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-gray-400">No timecard matches found for the chosen metrics window (${currentEmpFilterScope}).</td></tr>`;
+                return;
+            }
+
+            filteredLogs.sort((a,b) => new Date(b.date) - new Date(a.date)).forEach(log => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-gray-50 border-b border-gray-100 transition";
+                
+                let workStatusCell = log.logOut 
+                    ? (log.regHours >= 8 ? `<span class="text-emerald-700 font-semibold bg-emerald-50 px-2 py-0.5 rounded">Completed 8.0 hrs</span>` : `<span class="text-amber-700 bg-amber-50 px-2 py-0.5 rounded">${log.regHours} hrs verified</span>`)
+                    : `<span class="text-blue-600 bg-blue-50 px-2 py-0.5 rounded animate-pulse">On-Going Shift</span>`;
+
+                tr.innerHTML = `
+                    <td class="p-3 font-medium text-gray-900">${log.date}</td>
+                    <td class="p-3 text-xs text-gray-500 font-medium">${log.shift || '-'}</td>
+                    <td class="p-3 text-xs text-gray-600 font-semibold">${log.position || '-'}</td>
+                    <td class="p-3 text-emerald-600 font-mono">${log.logIn || '--:--'}</td>
+                    <td class="p-3 text-rose-600 font-mono">${log.logOut || '--:--'}</td>
+                    <td class="p-3">${workStatusCell}</td>
+                    <td class="p-3 font-semibold text-gray-800">${log.otHours > 0 ? log.otHours + ' hrs' : '-'}</td>
+                    <td class="p-3 text-amber-600">${log.undertime > 0 ? log.undertime + ' hrs' : '-'}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function filterAdminLogs(scope) {
+            currentAdminFilterScope = scope;
+            const tabs = document.querySelectorAll('.admin-tab-btn');
+            tabs.forEach(tab => {
+                if(tab.textContent.toLowerCase() === (scope === 'day' ? 'everyday' : scope === 'week' ? 'weekly' : 'monthly')) {
+                    tab.className = "admin-tab-btn px-3 py-1 font-medium rounded bg-slate-700 text-white";
+                } else {
+                    tab.className = "admin-tab-btn px-3 py-1 font-medium rounded text-gray-600 hover:text-gray-900";
+                }
+            });
+            renderAdminDashboard();
+        }
+
+        function renderAdminDashboard() {
+            const tbody = document.getElementById('adminLogTableBody');
+            tbody.innerHTML = '';
+
+            const anchorDateValue = document.getElementById('adminDateAnchor').value;
+            if(!anchorDateValue) return;
+
+            const filteredLogs = logs.filter(log => matchesFilterScope(log.date, currentAdminFilterScope, anchorDateValue));
+
+            if(filteredLogs.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="9" class="p-4 text-center text-gray-400 text-xs">No entries match the selection parameters.</td></tr>`;
+                return;
+            }
+
+            filteredLogs.sort((a,b) => new Date(b.date) - new Date(a.date) || a.name.localeCompare(b.name)).forEach(log => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-gray-50 border-b border-gray-100";
+                tr.innerHTML = `
+                    <td class="p-3 font-semibold text-slate-800">${log.name}</td>
+                    <td class="p-3 text-xs text-gray-500 font-medium">${log.shift || '-'}</td>
+                    <td class="p-3 text-xs text-gray-600 font-semibold">${log.position || '-'}</td>
+                    <td class="p-3 whitespace-nowrap">${log.date}</td>
+                    <td class="p-3 text-emerald-600 font-mono">${log.logIn || '--:--'}</td>
+                    <td class="p-3 text-rose-600 font-mono">${log.logOut || '--:--'}</td>
+                    <td class="p-3 font-medium">${log.regHours} hrs</td>
+                    <td class="p-3 font-bold text-slate-900">${log.otHours} hrs</td>
+                    <td class="p-3 text-amber-600 font-medium">${log.undertime} hrs</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function exportToExcel() {
+            if(logs.length === 0) {
+                alert("No organizational data to export.");
+                return;
+            }
+
+            const cleanExportData = logs.map(item => ({
+                "Employee Name": item.name,
+                "Assigned Shift": item.shift || 'N/A',
+                "Position": item.position || 'N/A',
+                "Calendar Date": item.date,
+                "Log In Timestamp": item.logIn || 'N/A',
+                "Log Out Timestamp": item.logOut || 'N/A',
+                "Regular Time Hours": item.regHours,
+                "Overtime Hours (OT)": item.otHours,
+                "Undertime Hours Balance": item.undertime
+            }));
+
+            const targetWorksheet = XLSX.utils.json_to_sheet(cleanExportData);
+            const targetWorkbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(targetWorkbook, targetWorksheet, "GS Attendance Master Data");
+            
+            const anchorValue = document.getElementById('adminDateAnchor').value || "export";
+            XLSX.writeFile(targetWorkbook, `GS_Attendance_Report_${currentAdminFilterScope}_${anchorValue}.xlsx`);
+        }
+    </script>
+</body>
+</html>
