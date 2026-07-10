@@ -1,0 +1,2553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GS Log In/Log Out Monitoring with Break Tracker & Compliance Audit</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        body {
+            position: relative;
+            background-color: #f1f5f9;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        }
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background-color: rgba(148, 163, 184, 0.15); 
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="min-h-screen text-slate-800 antialiased">
+
+    <nav class="bg-slate-900 text-white p-4 flex flex-col md:flex-row justify-between items-center gap-6 shadow-lg relative z-10 border-b border-slate-800">
+        <div class="flex flex-col lg:flex-row items-center gap-4 w-full md:w-auto text-center lg:text-left">
+            <div class="bg-white p-3 rounded-xl shadow-md border border-gray-100 select-none max-w-[280px] shrink-0 mx-auto md:mx-0">
+                <div class="flex items-start tracking-tight leading-none text-left">
+                    <div class="flex flex-col items-center justify-start pt-[5px] pr-2 gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-600 animate-pulse"></span>
+                        <span class="w-2.5 h-2.5 rounded-full bg-slate-900"></span>
+                    </div>
+                    <div class="flex flex-col">
+                        <span class="text-[26px] font-extrabold text-emerald-600 tracking-wide">Media</span>
+                        <span class="text-[26px] font-extrabold text-slate-900 tracking-wide -mt-1.5">Track</span>
+                    </div>
+                </div>
+                <p class="text-[8px] font-bold text-amber-700 mt-1.5 tracking-wider uppercase whitespace-nowrap">
+                    Information Logistics System
+                </p>
+            </div>
+
+            <div class="bg-slate-800/80 backdrop-blur-md rounded-xl p-3 border border-slate-700/50 text-left min-w-[280px] sm:min-w-[320px] lg:min-w-[480px]">
+                <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 border-b border-slate-700/50 pb-1">GS Team Leaders</p>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div class="flex flex-col">
+                        <span class="text-[11px] font-bold text-slate-100 leading-tight">Bonnie Lofranco Patio</span>
+                        <span class="text-[9px] text-slate-400 font-mono select-all">bonnie.patio@mediatrack.org</span>
+                    </div>
+                    <div class="flex flex-col border-t sm:border-t-0 sm:border-l border-slate-700/50 pt-1.5 sm:pt-0 sm:pl-3">
+                        <span class="text-[11px] font-bold text-slate-100 leading-tight">Thomas Jayson Lorenzo</span>
+                        <span class="text-[9px] text-slate-400 font-mono select-all">thomas.lorenzo@mediatrack.org</span>
+                    </div>
+                    <div class="flex flex-col border-t sm:border-t-0 sm:border-l border-slate-700/50 pt-1.5 sm:pt-0 sm:pl-3">
+                        <span class="text-[11px] font-bold text-slate-100 leading-tight">Marivel Noquillo</span>
+                        <span class="text-[9px] text-slate-400 font-mono select-all">marivel.noquillo@mediatrack.org</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex flex-col items-center md:items-end gap-2.5 shrink-0">
+            <div class="flex items-center gap-3">
+                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Access View:</span>
+                <select id="roleSwitcher" onchange="handleViewSwitchSelection(this.value)" class="bg-slate-800 text-white px-3 py-1.5 rounded-lg border border-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-xs font-bold uppercase tracking-wider cursor-pointer">
+                    <option value="employee">👤 Employee View</option>
+                    <option value="admin">🔑 Admin View</option>
+                </select>
+            </div>
+            <h1 class="text-[14px] font-extrabold tracking-widest text-slate-400 uppercase">
+                Log In/Out Monitoring Terminal
+            </h1>
+        </div>
+    </nav>
+
+    <div class="max-w-screen-2xl mx-auto p-4 sm:p-6 lg:p-8 relative z-10">
+
+        <!-- EMPLOYEE TERMINAL VIEW -->
+        <div id="employeeView" class="space-y-6">
+            <div class="flex flex-col sm:flex-row justify-between items-center gap-4 bg-white/80 p-4 rounded-xl border border-slate-200/60 shadow-sm">
+                <button onclick="toggleModal('registerModal', true)" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm px-6 py-3 rounded-lg shadow-md hover:shadow-lg transition flex items-center gap-2">
+                    ➕ Register New Profile
+                </button>
+                <div class="flex items-center gap-3">
+                    <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">System Clock:</span>
+                    <div id="employeeDigitalClock" class="bg-slate-900 text-emerald-400 font-mono px-5 py-2 rounded-lg text-sm font-bold tracking-widest shadow-inner border border-slate-800 select-none min-w-[140px] text-center">
+                        00:00:00 AM
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lock and Warning Status Banner for Employee Terminal -->
+            <div id="terminalAlertBanner" class="hidden max-w-xl mx-auto transition-all"></div>
+
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 max-w-md mx-auto relative overflow-hidden">
+                <!-- Overlay lock UI screen when blocked -->
+                <div id="terminalLockoutOverlay" class="absolute inset-0 bg-slate-950/95 backdrop-blur-sm flex flex-col justify-center items-center text-center p-6 text-white transition-opacity duration-300 hidden z-20">
+                    <div class="w-16 h-16 bg-rose-600/25 border border-rose-500 text-rose-500 rounded-full flex items-center justify-center text-3xl animate-bounce mb-4">🔒</div>
+                    <h3 class="text-xl font-bold tracking-tight text-rose-400">PROFILE DEACTIVATED / LOCKED</h3>
+                    <p class="text-xs text-slate-300 mt-2 max-w-xs">
+                        This profile has triggered safety blocks due to missing more than 3 unexcused workdays this week.
+                    </p>
+                    <div class="bg-slate-900/80 p-4 rounded-xl border border-slate-800 mt-4 text-xs space-y-2 w-full text-left">
+                        <p class="font-bold text-slate-400 uppercase tracking-widest text-[9px] text-center mb-1">Authorization Required. Contact leaders:</p>
+                        <p class="text-slate-300 flex justify-between"><span>👤 Bonnie Patio</span> <span class="font-mono text-amber-500 text-[10px]">bonnie.patio</span></p>
+                        <p class="text-slate-300 flex justify-between"><span>👤 Thomas Lorenzo</span> <span class="font-mono text-amber-500 text-[10px]">thomas.lorenzo</span></p>
+                        <p class="text-slate-300 flex justify-between"><span>👤 Marivel Noquillo</span> <span class="font-mono text-amber-500 text-[10px]">marivel.noquillo</span></p>
+                    </div>
+                </div>
+
+                <h2 class="text-md font-bold uppercase tracking-wider text-slate-700 mb-4 text-center border-b pb-2">Terminal Access Point</h2>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Select Your Name</label>
+                        <select id="empSelect" onchange="handleTerminalUserChange()" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none text-sm font-semibold text-slate-700"></select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Set Expected Shift Start</label>
+                        <select id="loginShiftStart" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none text-sm font-semibold text-slate-700">
+                            <option value="12:00 am">12:00 am</option>
+                            <option value="2:00 am">2:00 am</option>
+                            <option value="3:00 am">3:00 am</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Logging Target Date</label>
+                        <input type="date" id="employeeAttendanceDate" onchange="renderEmployeeDashboard()" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none text-sm font-semibold text-slate-700">
+                    </div>
+                    
+                    <div class="border-t border-slate-100 pt-4 space-y-3">
+                        <div class="grid grid-cols-2 gap-4">
+                            <button id="btnClockIn" onclick="handleClockAction('In')" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl transition shadow-sm disabled:opacity-30 disabled:cursor-not-allowed">Log In</button>
+                            <button id="btnClockOut" onclick="handleClockAction('Out')" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-3 rounded-xl transition shadow-sm disabled:opacity-30 disabled:cursor-not-allowed">Log Out</button>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <button id="btnBreakStart" onclick="handleBreakAction('Start')" class="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 rounded-xl transition shadow-sm flex items-center justify-center gap-1 disabled:opacity-30 disabled:cursor-not-allowed">☕ Take Break</button>
+                            <button id="btnBreakEnd" onclick="handleBreakAction('End')" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl transition shadow-sm flex items-center justify-center gap-1 disabled:opacity-30 disabled:cursor-not-allowed">✅ Done Break</button>
+                        </div>
+                        
+                        <!-- Test Break Simulator Panel -->
+                        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                            <div class="flex items-center justify-between">
+                                <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Break Test Simulator:</span>
+                                <select id="breakSimMode" class="text-xs bg-white border border-slate-200 rounded px-2.5 py-1 font-bold focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                                    <option value="real">Real-Time Tracker</option>
+                                    <option value="45">On-Time Break (45 Min)</option>
+                                    <option value="75">Excessive Overbreak (75 Min)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+                    <div>
+                        <h2 class="text-md font-bold uppercase tracking-wider text-slate-800">My Attendance History</h2>
+                        <p class="text-xs text-slate-500">View real-time status and timestamps. Colored badges emphasize late check-ins and break deviations.</p>
+                    </div>
+                    <div class="flex bg-slate-100 p-1 rounded-lg border border-slate-200 self-stretch sm:self-auto">
+                        <button onclick="filterEmployeeLogs('day')" class="emp-tab-btn px-4 py-1.5 text-xs font-bold rounded-md bg-white shadow-sm text-slate-800 transition">Everyday</button>
+                        <button onclick="filterEmployeeLogs('week')" class="emp-tab-btn px-4 py-1.5 text-xs font-bold rounded-md text-slate-500 hover:text-slate-800 transition">Weekly</button>
+                        <button onclick="filterEmployeeLogs('month')" class="emp-tab-btn px-4 py-1.5 text-xs font-bold rounded-md text-slate-500 hover:text-slate-800 transition">Monthly</button>
+                    </div>
+                </div>
+                <div class="overflow-x-auto custom-scrollbar">
+                    <table class="min-w-full divide-y divide-slate-200 text-left text-xs">
+                        <thead class="bg-slate-50 text-slate-500 uppercase font-bold tracking-wider">
+                            <tr>
+                                <th class="p-3">Date</th>
+                                <th class="p-3">Expected Shift Start</th>
+                                <th class="p-3">Log In</th>
+                                <th class="p-3">Break Session</th>
+                                <th class="p-3">Log Out</th>
+                                <th class="p-3">Regular Work Hours</th>
+                                <th class="p-3">OT Hours</th>
+                                <th class="p-3">Undertime</th>
+                            </tr>
+                        </thead>
+                        <tbody id="employeeLogTableBody" class="divide-y divide-slate-100 font-medium text-slate-600"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ADMIN VIEW PANEL -->
+        <div id="adminView" class="hidden space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 lg:col-span-3 flex flex-col justify-between min-h-[520px]">
+                    <div>
+                        <div class="flex justify-between items-center mb-3 border-b pb-2">
+                            <h3 class="font-bold text-slate-800 text-xs uppercase tracking-wider">Active Directory</h3>
+                            <div class="flex items-center gap-1.5">
+                                <button onclick="exportRosterDatabase()" class="text-[10px] bg-emerald-600 hover:bg-emerald-700 text-white px-2 py-1 rounded-md transition font-bold uppercase tracking-wider" title="Export current status list">Export</button>
+                                <button onclick="logoutAdmin()" class="text-[10px] bg-slate-200 hover:bg-slate-300 text-slate-700 px-2 py-1 rounded-md transition font-bold uppercase tracking-wider">Exit Gate</button>
+                            </div>
+                        </div>
+
+                        <!-- Date Selector For Directory Remarks -->
+                        <div class="mb-3">
+                            <label class="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Target Remarks Date</label>
+                            <input type="date" id="rosterDateAnchor" onchange="renderAdminDashboard()" class="w-full p-2 border border-slate-200 rounded-lg bg-white text-slate-700 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-500">
+                        </div>
+
+                        <!-- Remarks Scope Filter Tabs -->
+                        <div class="mb-3">
+                            <label class="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Directory Filter Scope</label>
+                            <div class="flex bg-slate-100 p-1 rounded-lg border border-slate-200">
+                                <button onclick="filterRosterScope('day')" class="roster-tab-btn flex-1 py-1 text-[10px] font-bold rounded-md bg-slate-700 text-white transition">Everyday</button>
+                                <button onclick="filterRosterScope('week')" class="roster-tab-btn flex-1 py-1 text-[10px] font-bold rounded-md text-slate-600 transition">Weekly</button>
+                                <button onclick="filterRosterScope('month')" class="roster-tab-btn flex-1 py-1 text-[10px] font-bold rounded-md text-slate-600 transition">Monthly</button>
+                            </div>
+                        </div>
+                        
+                        <div class="flex flex-row gap-2 mb-4">
+                            <button onclick="toggleModal('registerModal', true)" class="flex-1 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold py-2 rounded-lg transition uppercase tracking-wider">
+                                ➕ Add Profile
+                            </button>
+                            <select id="rosterRemarksFilter" onchange="renderAdminDashboard()" class="bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 text-[10px] font-bold py-1.5 px-2 rounded-lg focus:outline-none transition max-w-[120px] truncate cursor-pointer">
+                                <option value="all">🔍 All Remarks</option>
+                                <option value="none">No Remarks</option>
+                                <option value="DC">DC</option>
+                                <option value="Absent">Absent</option>
+                                <option value="Late">Late</option>
+                                <option value="On Break">On Break</option>
+                                <option value="Overbreak">Overbreak</option>
+                                <option value="Sick">Sick</option>
+                                <option value="on Leave">on Leave</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Team Directory Rosters</label>
+                            <div id="adminEmpList" class="space-y-1.5 max-h-[220px] overflow-y-auto custom-scrollbar border border-slate-100 p-1 rounded-xl"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 lg:col-span-9 space-y-4">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b pb-4">
+                        <div class="flex items-center gap-4 flex-wrap">
+                            <h3 class="text-md font-bold text-slate-800 uppercase tracking-wider">GS Master Control</h3>
+                            <!-- Admin Panel Navigation Tabs -->
+                            <div class="flex bg-slate-100 p-1 rounded-lg border border-slate-200">
+                                <button onclick="switchAdminSubView('logs')" id="adminSubTabLogs" class="px-4 py-1.5 text-xs font-bold rounded-md bg-slate-800 text-white shadow-sm transition">Attendance Logs</button>
+                                <button onclick="switchAdminSubView('compliance')" id="adminSubTabCompliance" class="px-4 py-1.5 text-xs font-bold rounded-md text-slate-600 hover:text-slate-800 transition flex items-center gap-1">📋 5-Day Audit & Compliance <span id="lockedCountBadge" class="bg-rose-500 text-white text-[9px] px-1.5 py-0.2 rounded-full hidden">0</span></button>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 self-stretch sm:self-auto justify-between sm:justify-end flex-wrap">
+                            <div id="digitalClock" class="bg-slate-900 text-emerald-400 font-mono px-4 py-2 rounded-lg text-xs font-bold tracking-widest shadow-inner border border-slate-800 select-none min-w-[120px] text-center">
+                                00:00:00 AM
+                            </div>
+                            <button onclick="exportAttendanceLogs()" class="bg-emerald-700 hover:bg-emerald-800 text-white px-4 py-2 text-xs font-bold rounded-lg transition inline-flex items-center gap-2 shadow-md uppercase tracking-wider">
+                                Export Logs (.xlsx)
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- ATTENDANCE LOGS TAB VIEW -->
+                    <div id="adminTabSectionLogs" class="space-y-4">
+                        <div class="flex flex-wrap items-center gap-4 bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs">
+                            <div class="flex flex-col">
+                                <span class="text-[9px] uppercase font-bold text-slate-400 mb-1">Target Date</span>
+                                <input type="date" id="adminDateAnchor" onchange="renderAdminDashboard()" class="p-1.5 border border-slate-200 rounded-lg bg-white text-slate-700 font-semibold focus:outline-none">
+                            </div>
+
+                            <div class="flex flex-col">
+                                <span class="text-[9px] uppercase font-bold text-slate-400 mb-1">Target Scope</span>
+                                <div class="flex bg-white p-1 rounded-lg border border-slate-200">
+                                    <button onclick="filterAdminLogs('day')" class="admin-tab-btn px-3 py-1 font-bold rounded-md bg-slate-700 text-white transition">Everyday</button>
+                                    <button onclick="filterAdminLogs('week')" class="admin-tab-btn px-3 py-1 font-bold rounded-md text-slate-600 transition">Weekly</button>
+                                    <button onclick="filterAdminLogs('month')" class="admin-tab-btn px-3 py-1 font-bold rounded-md text-slate-600 transition">Monthly</button>
+                                </div>
+                            </div>
+
+                            <div class="flex flex-col">
+                                <label class="block text-[9px] uppercase font-bold text-slate-400 mb-1">Filter Attendance</label>
+                                <select id="adminStatusFilter" onchange="renderAdminDashboard()" class="p-2 border border-slate-200 rounded-lg bg-white text-slate-700 font-semibold focus:outline-none cursor-pointer">
+                                    <option value="all">All Entries</option>
+                                    <option value="ontime">On-Time Log Ins</option>
+                                    <option value="late">Late Log Ins Only</option>
+                                    <option value="onbreak">On Break Currently</option>
+                                    <option value="overbreak">Over break Alerts Only</option>
+                                    <option value="undertime">Undertime Entries Only</option>
+                                    <option value="shift12">Expected Start: 12:00 AM</option>
+                                    <option value="shift2">Expected Start: 2:00 AM</option>
+                                    <option value="shift3">Expected Start: 3:00 AM</option>
+                                    <option value="late12">Late Log Ins (12:00 AM Shift)</option>
+                                    <option value="late2">Late Log Ins (2:00 AM Shift)</option>
+                                    <option value="late3">Late Log Ins (3:00 AM Shift)</option>
+                                    <option value="late_both">Late Log Ins (12:00 AM & 2:00 AM Shifts)</option>
+                                </select>
+                            </div>
+
+                            <div class="flex flex-col">
+                                <label class="block text-[9px] uppercase font-bold text-slate-400 mb-1">Sort Database</label>
+                                <select id="adminSortOrder" onchange="renderAdminDashboard()" class="p-2 border border-slate-200 rounded-lg bg-white text-slate-700 font-semibold focus:outline-none cursor-pointer">
+                                    <option value="default">Default</option>
+                                    <option value="name">Employee Name</option>
+                                    <option value="login">Log In Time</option>
+                                    <option value="ot">Overtime Hours</option>
+                                    <option value="ut">Undertime Hours (Highest First)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="overflow-x-auto custom-scrollbar">
+                            <table class="min-w-full divide-y divide-slate-200 text-left text-xs">
+                                <thead class="bg-slate-50 text-slate-500 uppercase font-bold tracking-wider">
+                                    <tr>
+                                        <th class="p-3">Employee</th>
+                                        <th class="p-3">Level</th>
+                                        <th class="p-3">Date</th>
+                                        <th class="p-3">Expected Duty</th>
+                                        <th class="p-3">In (Delay Flag)</th>
+                                        <th class="p-3">Break Info / Status</th>
+                                        <th class="p-3">Out</th>
+                                        <th class="p-3">Reg Hours</th>
+                                        <th class="p-3">OT Hours</th>
+                                        <th class="p-3">Undertime</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="adminLogTableBody" class="divide-y divide-slate-100 font-medium text-slate-600"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- COMPLIANCE TAB PANEL -->
+                    <div id="adminTabSectionCompliance" class="hidden space-y-4">
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
+                            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                                <div>
+                                    <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider">5-Day Work Week Audit & Compliance Roster</h4>
+                                    <p class="text-[11px] text-slate-500">Automatically evaluates Warning Flags for 3 consecutive missed days, and Locks profiles with &gt; 3 unexcused missed days.</p>
+                                </div>
+                                <div class="flex items-center gap-4 flex-wrap">
+                                    <!-- Time-Range Scope Selector Tabs inside Compliance view -->
+                                    <div class="flex bg-white p-1 rounded-lg border border-slate-200">
+                                        <button onclick="filterComplianceRange('day')" id="compTabRangeDay" class="px-3 py-1 text-[10px] font-bold rounded-md bg-slate-800 text-white transition">Everyday</button>
+                                        <button onclick="filterComplianceRange('week')" id="compTabRangeWeek" class="px-3 py-1 text-[10px] font-bold rounded-md text-slate-500 hover:text-slate-800 transition">Weekly</button>
+                                        <button onclick="filterComplianceRange('month')" id="compTabRangeMonth" class="px-3 py-1 text-[10px] font-bold rounded-md text-slate-500 hover:text-slate-800 transition">Monthly</button>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-xs font-bold text-slate-600 whitespace-nowrap">Audit Week Anchor:</span>
+                                        <input type="date" id="complianceWeekAnchor" onchange="renderComplianceAudit()" class="p-1.5 border border-slate-200 rounded-lg bg-white text-xs font-bold text-slate-700 focus:outline-none">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 pt-2 text-[10px] font-semibold">
+                                <div class="bg-emerald-50 border border-emerald-100 p-2.5 rounded-lg flex items-center gap-2">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-600"></span>
+                                    <div>
+                                        <p class="font-bold text-emerald-800">Normal / Safe Status</p>
+                                        <p class="text-slate-400 text-[9px]">Active and fully compliant profile.</p>
+                                    </div>
+                                </div>
+                                <div class="bg-amber-50 border border-amber-100 p-2.5 rounded-lg flex items-center gap-2">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                                    <div>
+                                        <p class="font-bold text-amber-800">Verbal/Written Warning</p>
+                                        <p class="text-slate-400 text-[9px]">Triggered by 3 consecutive missed days.</p>
+                                    </div>
+                                </div>
+                                <div class="bg-rose-50 border border-rose-100 p-2.5 rounded-lg flex items-center gap-2">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse"></span>
+                                    <div>
+                                        <p class="font-bold text-rose-800">Lock Out Status</p>
+                                        <p class="text-slate-400 text-[9px]">Exceeded 3 total missed days.</p>
+                                    </div>
+                                </div>
+                                <div class="bg-slate-100 border border-slate-200 p-2.5 rounded-lg flex items-center gap-2">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-slate-400"></span>
+                                    <div>
+                                        <p class="font-bold text-slate-700">Scheduled Rest Days</p>
+                                        <p class="text-slate-400 text-[9px]">Custom designated profile off days.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Dynamic Table View Area based on Selected Scope Filters -->
+                        <div class="overflow-x-auto custom-scrollbar">
+                            <table class="min-w-full divide-y divide-slate-200 text-left text-[11px]" id="complianceGridContainer">
+                                <thead class="bg-slate-50 text-slate-500 uppercase font-bold tracking-wider" id="complianceGridHeader">
+                                    <!-- Dynamic headers inject in JS -->
+                                </thead>
+                                <tbody id="complianceAuditTableBody" class="divide-y divide-slate-100 font-medium text-slate-600"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- REGISTER PROFILE MODAL -->
+    <div id="registerModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs hidden flex items-center justify-center z-50 p-4 animate-fade-in">
+        <div class="bg-white rounded-2xl shadow-xl max-w-md w-full overflow-hidden transform transition-all border border-slate-100">
+            <div class="bg-slate-900 p-4 text-white flex justify-between items-center">
+                <h3 class="font-bold text-sm tracking-wider uppercase">Plotter Tracking Entry Form</h3>
+                <button onclick="toggleModal('registerModal', false)" class="text-slate-400 hover:text-white text-xl font-bold">&times;</button>
+            </div>
+            <form id="employeeSelfRegisterForm" onsubmit="handleEmployeeSelfRegister(event)" class="p-6 space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Full Name</label>
+                    <input type="text" id="regEmpName" required placeholder="Firstname Lastname" class="w-full p-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none text-sm font-semibold text-slate-700">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Position</label>
+                    <select id="regEmpPosition" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none text-sm font-semibold text-slate-700">
+                        <option value="" disabled selected>Select Position</option>
+                        <option value="Plotter">Plotter</option>
+                        <option value="QC">QC</option>
+                        <option value="Adbust">Adbust</option>
+                        <option value="ECG">ECG</option>
+                        <option value="Page Checker">Page Checker</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Level</label>
+                    <select id="regEmpLevel" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none text-sm font-semibold text-slate-700">
+                        <option value="Level A">Level A</option>
+                        <option value="Level B">Level B</option>
+                        <option value="Level C">Level C</option>
+                        <option value="Level D">Level D</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Default Duty Time (Reference Shift)</label>
+                    <input type="text" id="regEmpDutyTime" required placeholder="e.g., 12:00 AM, 2:00 AM" class="w-full p-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none font-semibold text-slate-700">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Designate Days Off (Select Days)</label>
+                    <div class="grid grid-cols-2 gap-2 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                        <label class="flex items-center gap-2 text-xs font-bold text-slate-600 cursor-pointer">
+                            <input type="checkbox" name="regEmpDaysOff" value="Monday" class="rounded text-emerald-600 focus:ring-emerald-500">
+                            Monday
+                        </label>
+                        <label class="flex items-center gap-2 text-xs font-bold text-slate-600 cursor-pointer">
+                            <input type="checkbox" name="regEmpDaysOff" value="Tuesday" class="rounded text-emerald-600 focus:ring-emerald-500">
+                            Tuesday
+                        </label>
+                        <label class="flex items-center gap-2 text-xs font-bold text-slate-600 cursor-pointer">
+                            <input type="checkbox" name="regEmpDaysOff" value="Wednesday" class="rounded text-emerald-600 focus:ring-emerald-500">
+                            Wednesday
+                        </label>
+                        <label class="flex items-center gap-2 text-xs font-bold text-slate-600 cursor-pointer">
+                            <input type="checkbox" name="regEmpDaysOff" value="Thursday" class="rounded text-emerald-600 focus:ring-emerald-500">
+                            Thursday
+                        </label>
+                        <label class="flex items-center gap-2 text-xs font-bold text-slate-600 cursor-pointer">
+                            <input type="checkbox" name="regEmpDaysOff" value="Friday" class="rounded text-emerald-600 focus:ring-emerald-500">
+                            Friday
+                        </label>
+                        <label class="flex items-center gap-2 text-xs font-bold text-slate-600 cursor-pointer font-bold text-emerald-600">
+                            <input type="checkbox" name="regEmpDaysOff" value="Saturday" checked class="rounded text-emerald-600 focus:ring-emerald-500">
+                            Saturday (Default)
+                        </label>
+                        <label class="flex items-center gap-2 text-xs font-bold text-slate-600 cursor-pointer col-span-2 font-bold text-emerald-600">
+                            <input type="checkbox" name="regEmpDaysOff" value="Sunday" checked class="rounded text-emerald-600 focus:ring-emerald-500">
+                            Sunday (Default)
+                        </label>
+                    </div>
+                </div>
+                <div class="flex justify-end gap-3 pt-2">
+                    <button type="button" onclick="toggleModal('registerModal', false)" class="px-4 py-2 border border-slate-200 rounded-lg text-sm font-bold text-slate-600 hover:bg-slate-50">Cancel</button>
+                    <button type="submit" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-bold transition shadow-md">Save Profile</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- UPDATED ADMIN LOGIN & CREATION VERIFICATION MODAL -->
+    <div id="adminLoginModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs hidden flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full overflow-hidden transform transition-all border border-slate-100 animate-fade-in">
+            <div class="bg-slate-900 p-4 text-white text-center">
+                <h3 id="adminModalTitle" class="font-bold tracking-widest text-xs uppercase">Admin Gate Access</h3>
+                <p id="adminModalSub" class="text-[10px] text-slate-400 uppercase tracking-wider mt-0.5">Authorization Required</p>
+            </div>
+            
+            <!-- ADMIN LOGIN SCREEN -->
+            <form id="adminLoginForm" onsubmit="processAdminLogin(event)" class="p-6 space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Username</label>
+                    <input type="text" id="loginAdminUser" value="admin" required autocomplete="off" class="w-full p-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-slate-900 focus:outline-none font-bold text-slate-700 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Passkey</label>
+                    <input type="password" id="loginAdminPass" value="123" required class="w-full p-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-slate-900 focus:outline-none font-mono text-sm">
+                </div>
+                <div class="flex gap-3 pt-2">
+                    <button type="button" onclick="cancelAdminLogin()" class="w-1/2 px-4 py-2 border border-slate-200 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-50 uppercase tracking-wider">Cancel</button>
+                    <button type="submit" class="w-1/2 px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-xs font-bold transition shadow-md uppercase tracking-wider">Authenticate</button>
+                </div>
+                <div class="border-t border-slate-100 pt-3 text-center">
+                    <button type="button" onclick="toggleAdminModalScreen('register')" class="text-xs text-indigo-600 hover:text-indigo-800 font-extrabold uppercase tracking-wider transition">
+                        ➕ Register New Admin User
+                    </button>
+                </div>
+            </form>
+
+            <!-- REGISTER ADDITIONAL ADMIN SCREEN -->
+            <form id="adminRegisterForm" onsubmit="handleCreateAdminUser(event)" class="p-6 space-y-4 hidden">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">New Admin Username</label>
+                    <input type="text" id="newAdminUser" required placeholder="e.g., lead_supervisor" autocomplete="off" class="w-full p-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none font-bold text-slate-700 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">New Admin Passkey</label>
+                    <input type="password" id="newAdminPass" required placeholder="Create secure passkey" class="w-full p-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none font-mono text-sm">
+                </div>
+                <div class="flex gap-3 pt-2">
+                    <button type="button" onclick="toggleAdminModalScreen('login')" class="w-1/2 px-4 py-2 border border-slate-200 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-50 uppercase tracking-wider">Back to Login</button>
+                    <button type="submit" class="w-1/2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition shadow-md uppercase tracking-wider">Save Admin</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ATTENDANCE WARNING LETTER COMPLIANCE PREVIEW MODAL -->
+    <div id="warningNoticeModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs hidden flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full overflow-hidden transform transition-all border border-slate-200">
+            <div class="bg-amber-600 p-4 text-white flex justify-between items-center">
+                <h3 class="font-bold text-xs tracking-wider uppercase">⚠️ Generated Attendance Warning Notice</h3>
+                <button onclick="toggleModal('warningNoticeModal', false)" class="text-white hover:text-amber-100 text-xl font-bold">&times;</button>
+            </div>
+            <div class="p-6 space-y-4">
+                <p class="text-xs text-slate-500 font-medium">Official formal notice draft triggered by consecutive absences. You may copy the generated template directly to deliver to the employee.</p>
+                <div class="bg-slate-50 p-4 rounded-xl border font-mono text-xs text-slate-700 h-64 overflow-y-auto whitespace-pre-wrap select-all leading-relaxed custom-scrollbar" id="warningLetterContent"></div>
+                <div class="flex justify-end gap-3 pt-2 border-t">
+                    <button type="button" onclick="toggleModal('warningNoticeModal', false)" class="px-4 py-2 border border-slate-200 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-50">Close</button>
+                    <button type="button" onclick="copyWarningLetterToClipboard()" class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-lg transition shadow-md">Copy to Clipboard</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CUSTOM INTERACTION MESSAGES & ALERT DIALOGS -->
+    <div id="customAlert" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs hidden flex items-center justify-center z-[100] p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden border border-slate-100 p-6 text-center transform scale-95 transition-all">
+            <div class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span class="text-xl">ℹ️</span>
+            </div>
+            <p id="customAlertMessage" class="text-slate-700 text-xs font-bold mb-6 whitespace-pre-line leading-relaxed"></p>
+            <button onclick="closeCustomAlert()" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-2.5 rounded-lg text-xs transition shadow-md uppercase tracking-wider">Acknowledge</button>
+        </div>
+    </div>
+
+    <div id="customConfirm" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs hidden flex items-center justify-center z-[100] p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden border border-slate-100 p-6 text-center transform scale-95 transition-all">
+            <div class="w-12 h-12 bg-rose-50 text-rose-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span class="text-xl">⚠️</span>
+            </div>
+            <p id="customConfirmMessage" class="text-slate-700 text-xs font-bold mb-6 leading-relaxed"></p>
+            <div class="flex gap-3">
+                <button id="customConfirmCancelBtn" class="w-1/2 px-4 py-2.5 border border-slate-200 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-50 transition uppercase tracking-wider">Cancel</button>
+                <button id="customConfirmSuccessBtn" class="w-1/2 px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold transition shadow-md uppercase tracking-wider">Remove</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, deleteDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // MASTER PROFILE DATABASE (Pre-populated rich in-memory database)
+        let rawMasterDataset = [
+            { name: "Juan Dela Cruz", position: "Plotter", level: "Level A", dutyTime: "12:00 am", status: "ACTIVE", daysOff: ["Saturday", "Sunday"] },
+            { name: "Maria Clara", position: "QC", level: "Level B", dutyTime: "2:00 am", status: "ACTIVE", daysOff: ["Saturday", "Sunday"] },
+            { name: "Jane Doe", position: "Adbust", level: "Level C", dutyTime: "12:00 am", status: "ACTIVE", daysOff: ["Saturday", "Sunday"] },
+            { name: "Thomas Lorenzo", position: "ECG", level: "Level A", dutyTime: "3:00 am", status: "ACTIVE", daysOff: ["Saturday", "Sunday"] }
+        ];
+
+        // SYSTEM ADMINISTRATORS DATABASE (Dynamic additions handled securely via persistent database state)
+        let adminUsers = [
+            { user: "admin", pass: "123" }
+        ];
+
+        // DATE-SPECIFIC ROSTER REMARKS SYSTEM
+        let rosterRemarksDb = {};
+
+        // OVERRIDE FOR LOCKED PROFILES (Deactivations/Locks)
+        let lockedUsersDb = {
+            "Jane Doe": "LOCKED" 
+        };
+
+        let attendanceLogs = [];
+        let currentEmpFilterTab = 'day';
+        let currentAdminFilterTab = 'day';
+        let currentRosterFilterTab = 'day'; 
+        let currentComplianceRangeTab = 'week'; // Default range scope for 5-Day Audit
+        let confirmActionCallback = null;
+
+        // Firebase State Handles
+        let db = null;
+        let auth = null;
+        let isUsingFirebase = false;
+
+        function setupLiveInMemorySampleData() {
+            const today = new Date();
+            const formatDate = (offset) => {
+                const d = new Date(today);
+                d.setDate(today.getDate() - offset);
+                return d.toISOString().split('T')[0];
+            };
+
+            const t0 = formatDate(0); // Today
+            const t1 = formatDate(1); // Yesterday
+            const t2 = formatDate(2);
+            const t3 = formatDate(3);
+            const t4 = formatDate(4);
+
+            // Populate Historical Active Logs for the week
+            attendanceLogs = [
+                {
+                    name: "Juan Dela Cruz",
+                    level: "Level A",
+                    date: t4,
+                    expectedDuty: "12:00 am",
+                    loginRaw: new Date(`${t4}T00:01:00`),
+                    logoutRaw: new Date(`${t4}T08:00:00`),
+                    login: "12:01 AM",
+                    logout: "08:00 AM",
+                    isLate: false,
+                    latenessMins: 0,
+                    lateRemarks: "On Time",
+                    regHrs: "8.0 hrs",
+                    ot: "0.0 hrs",
+                    ut: "0.0 hrs",
+                    breakStartRaw: new Date(`${t4}T04:00:00`),
+                    breakEndRaw: new Date(`${t4}T04:45:00`),
+                    breakStart: "04:00 AM",
+                    breakEnd: "04:45 AM",
+                    breakDuration: 45,
+                    isOverbreak: false,
+                    overbreakMins: 0
+                },
+                {
+                    name: "Juan Dela Cruz",
+                    level: "Level A",
+                    date: t1,
+                    expectedDuty: "12:00 am",
+                    loginRaw: new Date(`${t1}T23:58:00`),
+                    logoutRaw: new Date(`${t1}T08:00:00`),
+                    login: "11:58 PM",
+                    logout: "08:00 AM",
+                    isLate: false,
+                    latenessMins: 0,
+                    lateRemarks: "On Time",
+                    regHrs: "8.0 hrs",
+                    ot: "0.0 hrs",
+                    ut: "0.0 hrs",
+                    breakStartRaw: new Date(`${t1}T03:00:00`),
+                    breakEndRaw: new Date(`${t1}T03:50:00`),
+                    breakStart: "03:00 AM",
+                    breakEnd: "03:50 AM",
+                    breakDuration: 50,
+                    isOverbreak: false,
+                    overbreakMins: 0
+                },
+                {
+                    name: "Maria Clara",
+                    level: "Level B",
+                    date: t3,
+                    expectedDuty: "2:00 am",
+                    loginRaw: new Date(`${t3}T02:15:00`),
+                    logoutRaw: new Date(`${t3}T10:00:00`),
+                    login: "02:15 AM",
+                    logout: "10:00 AM",
+                    isLate: true,
+                    latenessMins: 15,
+                    lateRemarks: "LATE by 15 mins",
+                    regHrs: "7.8 hrs",
+                    ot: "0.0 hrs",
+                    ut: "0.2 hrs",
+                    breakStartRaw: new Date(`${t3}T06:00:00`),
+                    breakEndRaw: new Date(`${t3}T07:15:00`),
+                    breakStart: "06:00 AM",
+                    breakEnd: "07:15 AM",
+                    breakDuration: 75,
+                    isOverbreak: true,
+                    overbreakMins: 15
+                }
+            ];
+
+            rosterRemarksDb[t4] = { "Juan Dela Cruz": "DC" };
+            rosterRemarksDb[t3] = { "Maria Clara": "Late" };
+            rosterRemarksDb[t2] = { "Thomas Lorenzo": "Absent" };
+            rosterRemarksDb[t1] = { "Thomas Lorenzo": "Absent" };
+            rosterRemarksDb[t0] = { "Thomas Lorenzo": "Absent" }; 
+        }
+
+        async function bootstrapFirebase() {
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'gs-attendance-app-persisted';
+            let firebaseConfig = null;
+            try {
+                if (typeof __firebase_config !== 'undefined' && __firebase_config) {
+                    firebaseConfig = JSON.parse(__firebase_config);
+                }
+            } catch (err) {
+                console.error("Firebase config parsing error:", err);
+            }
+
+            if (!firebaseConfig) {
+                console.warn("Firebase config not available. Standing by with persistent in-memory operations.");
+                setupLiveInMemorySampleData();
+                populateEmployeeDropdown();
+                renderAdminDashboard();
+                return;
+            }
+
+            try {
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+
+                let user = null;
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    const cred = await signInWithCustomToken(auth, __initial_auth_token);
+                    user = cred.user;
+                } else {
+                    const cred = await signInAnonymously(auth);
+                    user = cred.user;
+                }
+
+                if (user) {
+                    isUsingFirebase = true;
+                    setupFirestoreSync(appId);
+                } else {
+                    throw new Error("Anonymous auth returned null user.");
+                }
+            } catch (err) {
+                console.error("Failed to connect to Firebase. Using offline local fallback state:", err);
+                setupLiveInMemorySampleData();
+                populateEmployeeDropdown();
+                renderAdminDashboard();
+            }
+        }
+
+        function setupFirestoreSync(appId) {
+            // STRICT RULE 3 Guard checking
+            if (!auth.currentUser) return;
+
+            // 1. Sync System Administrators
+            const adminsCol = collection(db, 'artifacts', appId, 'public', 'data', 'admins');
+            onSnapshot(adminsCol, (snapshot) => {
+                let tempAdmins = [];
+                snapshot.forEach(doc => {
+                    tempAdmins.push(doc.data());
+                });
+                if (!tempAdmins.some(a => a.user.toLowerCase() === 'admin')) {
+                    tempAdmins.push({ user: 'admin', pass: '123' });
+                }
+                adminUsers = tempAdmins;
+                renderAdminDashboard();
+            }, (error) => {
+                console.error("Admins collection sync failure:", error);
+            });
+
+            // 2. Sync Employee Profiles
+            const employeesCol = collection(db, 'artifacts', appId, 'public', 'data', 'employees');
+            onSnapshot(employeesCol, (snapshot) => {
+                let tempEmployees = [];
+                snapshot.forEach(doc => {
+                    tempEmployees.push(doc.data());
+                });
+                if (tempEmployees.length === 0) {
+                    seedDefaultEmployees(appId);
+                } else {
+                    rawMasterDataset = tempEmployees;
+                    populateEmployeeDropdown();
+                    renderAdminDashboard();
+                    renderComplianceAudit();
+                }
+            }, (error) => {
+                console.error("Employees collection sync failure:", error);
+            });
+
+            // 3. Sync Active Logs
+            const logsCol = collection(db, 'artifacts', appId, 'public', 'data', 'logs');
+            onSnapshot(logsCol, (snapshot) => {
+                let tempLogs = [];
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    tempLogs.push({
+                        ...data,
+                        loginRaw: data.loginRawTime ? new Date(data.loginRawTime) : null,
+                        logoutRaw: data.logoutRawTime ? new Date(data.logoutRawTime) : null,
+                        breakStartRaw: data.breakStartRawTime ? new Date(data.breakStartRawTime) : null,
+                        breakEndRaw: data.breakEndRawTime ? new Date(data.breakEndRawTime) : null
+                    });
+                });
+                if (tempLogs.length === 0 && rawMasterDataset.length > 0) {
+                    seedDefaultLogs(appId);
+                } else {
+                    attendanceLogs = tempLogs;
+                    renderAdminDashboard();
+                    renderEmployeeDashboard();
+                    renderComplianceAudit();
+                }
+            }, (error) => {
+                console.error("Logs collection sync failure:", error);
+            });
+
+            // 4. Sync Roster Remarks
+            const remarksCol = collection(db, 'artifacts', appId, 'public', 'data', 'remarks');
+            onSnapshot(remarksCol, (snapshot) => {
+                let tempRemarks = {};
+                snapshot.forEach(doc => {
+                    try {
+                        tempRemarks[doc.id] = JSON.parse(doc.data().remarksMap || '{}');
+                    } catch (e) {
+                        tempRemarks[doc.id] = doc.data().remarksMap || {};
+                    }
+                });
+                rosterRemarksDb = tempRemarks;
+                renderAdminDashboard();
+                renderComplianceAudit();
+            }, (error) => {
+                console.error("Remarks collection sync failure:", error);
+            });
+
+            // 5. Sync Terminal Locks
+            const locksCol = collection(db, 'artifacts', appId, 'public', 'data', 'locks');
+            onSnapshot(locksCol, (snapshot) => {
+                let tempLocks = {};
+                snapshot.forEach(doc => {
+                    tempLocks[doc.id] = doc.data().status;
+                });
+                lockedUsersDb = tempLocks;
+                handleTerminalUserChange();
+                renderComplianceAudit();
+            }, (error) => {
+                console.error("Locks collection sync failure:", error);
+            });
+        }
+
+        async function seedDefaultEmployees(appId) {
+            const defaults = [
+                { name: "Juan Dela Cruz", position: "Plotter", level: "Level A", dutyTime: "12:00 am", status: "ACTIVE", daysOff: ["Saturday", "Sunday"] },
+                { name: "Maria Clara", position: "QC", level: "Level B", dutyTime: "2:00 am", status: "ACTIVE", daysOff: ["Saturday", "Sunday"] },
+                { name: "Jane Doe", position: "Adbust", level: "Level C", dutyTime: "12:00 am", status: "ACTIVE", daysOff: ["Saturday", "Sunday"] },
+                { name: "Thomas Lorenzo", position: "ECG", level: "Level A", dutyTime: "3:00 am", status: "ACTIVE", daysOff: ["Saturday", "Sunday"] }
+            ];
+            for (let emp of defaults) {
+                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'employees', emp.name), emp);
+            }
+        }
+
+        async function seedDefaultLogs(appId) {
+            const today = new Date();
+            const formatDate = (offset) => {
+                const d = new Date(today);
+                d.setDate(today.getDate() - offset);
+                return d.toISOString().split('T')[0];
+            };
+
+            const t0 = formatDate(0); 
+            const t1 = formatDate(1); 
+            const t2 = formatDate(2);
+            const t3 = formatDate(3);
+            const t4 = formatDate(4);
+
+            const initialLogs = [
+                {
+                    name: "Juan Dela Cruz",
+                    level: "Level A",
+                    date: t4,
+                    expectedDuty: "12:00 am",
+                    loginRawTime: new Date(`${t4}T00:01:00`).getTime(),
+                    logoutRawTime: new Date(`${t4}T08:00:00`).getTime(),
+                    login: "12:01 AM",
+                    logout: "08:00 AM",
+                    isLate: false,
+                    latenessMins: 0,
+                    lateRemarks: "On Time",
+                    regHrs: "8.0 hrs",
+                    ot: "0.0 hrs",
+                    ut: "0.0 hrs",
+                    breakStartRawTime: new Date(`${t4}T04:00:00`).getTime(),
+                    breakEndRawTime: new Date(`${t4}T04:45:00`).getTime(),
+                    breakStart: "04:00 AM",
+                    breakEnd: "04:45 AM",
+                    breakDuration: 45,
+                    isOverbreak: false,
+                    overbreakMins: 0
+                },
+                {
+                    name: "Juan Dela Cruz",
+                    level: "Level A",
+                    date: t1,
+                    expectedDuty: "12:00 am",
+                    loginRawTime: new Date(`${t1}T23:58:00`).getTime(),
+                    logoutRawTime: new Date(`${t1}T08:00:00`).getTime(),
+                    login: "11:58 PM",
+                    logout: "08:00 AM",
+                    isLate: false,
+                    latenessMins: 0,
+                    lateRemarks: "On Time",
+                    regHrs: "8.0 hrs",
+                    ot: "0.0 hrs",
+                    ut: "0.0 hrs",
+                    breakStartRawTime: new Date(`${t1}T03:00:00`).getTime(),
+                    breakEndRawTime: new Date(`${t1}T03:50:00`).getTime(),
+                    breakStart: "03:00 AM",
+                    breakEnd: "03:50 AM",
+                    breakDuration: 50,
+                    isOverbreak: false,
+                    overbreakMins: 0
+                },
+                {
+                    name: "Maria Clara",
+                    level: "Level B",
+                    date: t3,
+                    expectedDuty: "2:00 am",
+                    loginRawTime: new Date(`${t3}T02:15:00`).getTime(),
+                    logoutRawTime: new Date(`${t3}T10:00:00`).getTime(),
+                    login: "02:15 AM",
+                    logout: "10:00 AM",
+                    isLate: true,
+                    latenessMins: 15,
+                    lateRemarks: "LATE by 15 mins",
+                    regHrs: "7.8 hrs",
+                    ot: "0.0 hrs",
+                    ut: "0.2 hrs",
+                    breakStartRawTime: new Date(`${t3}T06:00:00`).getTime(),
+                    breakEndRawTime: new Date(`${t3}T07:15:00`).getTime(),
+                    breakStart: "06:00 AM",
+                    breakEnd: "07:15 AM",
+                    breakDuration: 75,
+                    isOverbreak: true,
+                    overbreakMins: 15
+                }
+            ];
+
+            for (let log of initialLogs) {
+                const docId = `${log.name}_${log.date}`;
+                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'logs', docId), log);
+            }
+
+            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'remarks', t4), { remarksMap: JSON.stringify({ "Juan Dela Cruz": "DC" }) });
+            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'remarks', t3), { remarksMap: JSON.stringify({ "Maria Clara": "Late" }) });
+            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'remarks', t2), { remarksMap: JSON.stringify({ "Thomas Lorenzo": "Absent" }) });
+            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'remarks', t1), { remarksMap: JSON.stringify({ "Thomas Lorenzo": "Absent" }) });
+            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'remarks', t0), { remarksMap: JSON.stringify({ "Thomas Lorenzo": "Absent" }) });
+
+            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'locks', 'Jane Doe'), { status: 'LOCKED' });
+        }
+
+        async function saveAdminToDb(account) {
+            if (isUsingFirebase && auth.currentUser) {
+                const appId = typeof __app_id !== 'undefined' ? __app_id : 'gs-attendance-app-persisted';
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'admins', account.user);
+                await setDoc(docRef, account);
+            }
+        }
+
+        async function saveEmployeeToDb(employee) {
+            if (isUsingFirebase && auth.currentUser) {
+                const appId = typeof __app_id !== 'undefined' ? __app_id : 'gs-attendance-app-persisted';
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'employees', employee.name);
+                await setDoc(docRef, employee);
+            }
+        }
+
+        async function deleteEmployeeFromDb(name) {
+            if (isUsingFirebase && auth.currentUser) {
+                const appId = typeof __app_id !== 'undefined' ? __app_id : 'gs-attendance-app-persisted';
+                
+                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'employees', name));
+                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'locks', name));
+
+                const targetLogs = attendanceLogs.filter(l => l.name === name);
+                for (let log of targetLogs) {
+                    const docId = `${log.name}_${log.date}`;
+                    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'logs', docId));
+                }
+
+                for (let dateKey in rosterRemarksDb) {
+                    if (rosterRemarksDb[dateKey] && rosterRemarksDb[dateKey][name]) {
+                        const updatedMap = { ...rosterRemarksDb[dateKey] };
+                        delete updatedMap[name];
+                        const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'remarks', dateKey);
+                        await setDoc(docRef, { remarksMap: JSON.stringify(updatedMap) });
+                    }
+                }
+            }
+        }
+
+        async function saveLogToDb(log) {
+            if (isUsingFirebase && auth.currentUser) {
+                const appId = typeof __app_id !== 'undefined' ? __app_id : 'gs-attendance-app-persisted';
+                const docId = `${log.name}_${log.date}`;
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'logs', docId);
+                
+                const serializableLog = {
+                    ...log,
+                    loginRawTime: log.loginRaw ? log.loginRaw.getTime() : null,
+                    logoutRawTime: log.logoutRaw ? log.logoutRaw.getTime() : null,
+                    breakStartRawTime: log.breakStartRaw ? log.breakStartRaw.getTime() : null,
+                    breakEndRawTime: log.breakEndRaw ? log.breakEndRaw.getTime() : null
+                };
+                delete serializableLog.loginRaw;
+                delete serializableLog.logoutRaw;
+                delete serializableLog.breakStartRaw;
+                delete serializableLog.breakEndRaw;
+
+                await setDoc(docRef, serializableLog);
+            }
+        }
+
+        async function deleteLogFromDb(name, date) {
+            if (isUsingFirebase && auth.currentUser) {
+                const appId = typeof __app_id !== 'undefined' ? __app_id : 'gs-attendance-app-persisted';
+                const docId = `${name}_${date}`;
+                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'logs', docId));
+            }
+        }
+
+        async function saveRemarksToDb(date, map) {
+            if (isUsingFirebase && auth.currentUser) {
+                const appId = typeof __app_id !== 'undefined' ? __app_id : 'gs-attendance-app-persisted';
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'remarks', date);
+                await setDoc(docRef, { remarksMap: JSON.stringify(map) });
+            }
+        }
+
+        async function saveLockToDb(name, status) {
+            if (isUsingFirebase && auth.currentUser) {
+                const appId = typeof __app_id !== 'undefined' ? __app_id : 'gs-attendance-app-persisted';
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'locks', name);
+                if (status) {
+                    await setDoc(docRef, { status: status });
+                } else {
+                    await deleteDoc(docRef);
+                }
+            }
+        }
+
+        function showNotificationToast(msg, isAutoSave = true) {
+            let toastContainer = document.getElementById('toastContainer');
+            if (!toastContainer) {
+                toastContainer = document.createElement('div');
+                toastContainer.id = 'toastContainer';
+                toastContainer.className = 'fixed bottom-4 right-4 z-[110] flex flex-col gap-2 pointer-events-none';
+                document.body.appendChild(toastContainer);
+            }
+            const toast = document.createElement('div');
+            toast.className = `p-3 rounded-xl shadow-lg text-white font-semibold text-[11px] tracking-wide transition duration-300 transform translate-y-2 opacity-0 pointer-events-auto flex items-center gap-2 ${
+                isAutoSave ? 'bg-slate-900 border border-slate-800' : 'bg-emerald-600'
+            }`;
+            toast.innerHTML = isAutoSave ? `⚙️ <span class="text-slate-300">${msg}</span>` : `💡 <span>${msg}</span>`;
+            toastContainer.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 10);
+            
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 2500);
+        }
+
+        function triggerCustomAlert(msg) {
+            document.getElementById('customAlertMessage').textContent = msg;
+            document.getElementById('customAlert').classList.remove('hidden');
+        }
+
+        function closeCustomAlert() {
+            document.getElementById('customAlert').classList.add('hidden');
+        }
+
+        function triggerCustomConfirm(msg, callback) {
+            document.getElementById('customConfirmMessage').textContent = msg;
+            confirmActionCallback = callback;
+            document.getElementById('customConfirm').classList.remove('hidden');
+        }
+
+        document.getElementById('customConfirmCancelBtn').onclick = function() {
+            document.getElementById('customConfirm').classList.add('hidden');
+            confirmActionCallback = null;
+        };
+
+        document.getElementById('customConfirmSuccessBtn').onclick = function() {
+            document.getElementById('customConfirm').classList.add('hidden');
+            if(confirmActionCallback) confirmActionCallback();
+            confirmActionCallback = null;
+        };
+
+        window.addEventListener('DOMContentLoaded', () => {
+            initializeClock();
+            setDefaultDates();
+            bootstrapFirebase();
+        });
+
+        function initializeClock() {
+            setInterval(() => {
+                const now = new Date();
+                let hrs = now.getHours();
+                const mins = String(now.getMinutes()).padStart(2, '0');
+                const secs = String(now.getSeconds()).padStart(2, '0');
+                const ampm = hrs >= 12 ? 'PM' : 'AM';
+                hrs = hrs % 12 || 12;
+                const formattedTime = `${String(hrs).padStart(2, '0')}:${mins}:${secs} ${ampm}`;
+                
+                const adminClock = document.getElementById('digitalClock');
+                if (adminClock) {
+                    adminClock.textContent = formattedTime;
+                }
+                
+                const empClock = document.getElementById('employeeDigitalClock');
+                if (empClock) {
+                    empClock.textContent = formattedTime;
+                }
+            }, 1000);
+        }
+
+        function setDefaultDates() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('adminDateAnchor').value = today;
+            document.getElementById('employeeAttendanceDate').value = today;
+            document.getElementById('rosterDateAnchor').value = today;
+            document.getElementById('complianceWeekAnchor').value = today;
+        }
+
+        function populateEmployeeDropdown() {
+            const select = document.getElementById('empSelect');
+            if (!select) return;
+            const currentSelected = select.value;
+            select.innerHTML = '<option value="">-- Choose Profile Identity --</option>';
+            
+            rawMasterDataset.forEach(emp => {
+                const option = document.createElement('option');
+                option.value = emp.name;
+                option.textContent = emp.name;
+                select.appendChild(option);
+            });
+            select.value = currentSelected;
+        }
+
+        function getMondayOfDate(d) {
+            const date = new Date(d);
+            const day = date.getDay();
+            const diff = date.getDate() - day + (day === 0 ? -6 : 1); 
+            return new Date(date.setDate(diff));
+        }
+
+        function auditEmployeeAttendance(empName, anchorDateStr) {
+            const anchor = new Date(anchorDateStr);
+            const mon = getMondayOfDate(anchor);
+            const weekdays = [];
+            
+            for (let i = 0; i < 7; i++) {
+                const d = new Date(mon);
+                d.setDate(mon.getDate() + i);
+                weekdays.push(d.toISOString().split('T')[0]);
+            }
+
+            let totalAbsences = 0;
+            let maxConsecutive = 0;
+            let currentConsecutive = 0;
+            const dailyStatus = [];
+
+            const todayStr = new Date().toISOString().split('T')[0];
+            const empMeta = rawMasterDataset.find(e => e.name === empName);
+            const daysOff = empMeta && empMeta.daysOff ? empMeta.daysOff : ["Saturday", "Sunday"];
+
+            weekdays.forEach((dateStr) => {
+                const hasLog = attendanceLogs.some(l => l.name === empName && l.date === dateStr && l.loginRaw);
+                const remark = rosterRemarksDb[dateStr]?.[empName] || "";
+
+                let status = "untracked";
+                
+                const dayDate = new Date(dateStr);
+                const dayName = dayDate.toLocaleDateString('en-US', { weekday: 'long' });
+
+                if (daysOff.includes(dayName)) {
+                    status = "Rest";
+                } else if (hasLog) {
+                    status = "Present";
+                } else if (remark === "Sick" || remark === "on Leave") {
+                    status = "Excused";
+                } else if (remark === "Absent") {
+                    status = "Absent";
+                } else {
+                    if (dateStr <= todayStr) {
+                        status = "Absent";
+                    } else {
+                        status = "Pending";
+                    }
+                }
+
+                dailyStatus.push({ date: dateStr, status: status, remark: remark });
+
+                if (status === "Absent") {
+                    totalAbsences++;
+                    currentConsecutive++;
+                    if (currentConsecutive > maxConsecutive) {
+                        maxConsecutive = currentConsecutive;
+                    }
+                } else if (status === "Present" || status === "Excused") {
+                    currentConsecutive = 0;
+                }
+            });
+
+            let calculatedStatus = "Active";
+            
+            if (lockedUsersDb[empName] === "LOCKED" || totalAbsences > 3) {
+                calculatedStatus = "Lock the User";
+            } 
+            else if (maxConsecutive >= 3) {
+                calculatedStatus = "Verbal/Written Warning";
+            }
+
+            return {
+                weekdays,
+                dailyStatus,
+                totalAbsences,
+                maxConsecutive,
+                status: calculatedStatus
+            };
+        }
+
+        function handleTerminalUserChange() {
+            const empName = document.getElementById('empSelect').value;
+            const chosenDateStr = document.getElementById('employeeAttendanceDate').value || new Date().toISOString().split('T')[0];
+            
+            const overlay = document.getElementById('terminalLockoutOverlay');
+            const alertBanner = document.getElementById('terminalAlertBanner');
+
+            if (empName) {
+                const empMeta = rawMasterDataset.find(e => e.name === empName);
+                if (empMeta && empMeta.dutyTime) {
+                    const matchedShift = empMeta.dutyTime.toLowerCase().trim();
+                    const shiftDropdown = document.getElementById('loginShiftStart');
+                    for (let i = 0; i < shiftDropdown.options.length; i++) {
+                        if (shiftDropdown.options[i].value.toLowerCase() === matchedShift) {
+                            shiftDropdown.selectedIndex = i;
+                            break;
+                        }
+                    }
+                }
+
+                const audit = auditEmployeeAttendance(empName, chosenDateStr);
+                
+                overlay.classList.add('hidden');
+                alertBanner.classList.add('hidden');
+                alertBanner.innerHTML = '';
+
+                const daysOff = empMeta ? (empMeta.daysOff || ["Saturday", "Sunday"]) : ["Saturday", "Sunday"];
+                const dateParts = chosenDateStr.split('-');
+                const targetDate = new Date(parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2]));
+                const weekdayName = targetDate.toLocaleDateString('en-US', { weekday: 'long' });
+
+                if (daysOff.includes(weekdayName)) {
+                    document.getElementById('btnClockIn').disabled = true;
+                    document.getElementById('btnClockOut').disabled = true;
+                    document.getElementById('btnBreakStart').disabled = true;
+                    document.getElementById('btnBreakEnd').disabled = true;
+
+                    alertBanner.classList.remove('hidden');
+                    alertBanner.innerHTML = `
+                        <div class="bg-rose-100 border-l-4 border-rose-600 p-4 rounded-r-xl text-rose-950 shadow-sm text-xs">
+                            <p class="font-bold">⚠️ REST DAY DECLARED</p>
+                            <p class="mt-1">Today is scheduled as your day off (<strong>${weekdayName}</strong>). Direct logging is restricted.</p>
+                        </div>
+                    `;
+
+                    triggerCustomAlert(`Is your OFF today? Please coordinate with your Supervisor if you are working a custom overtime shift.`);
+                } else if (audit.status === "Lock the User") {
+                    overlay.classList.remove('hidden');
+                    document.getElementById('btnClockIn').disabled = true;
+                    document.getElementById('btnClockOut').disabled = true;
+                    document.getElementById('btnBreakStart').disabled = true;
+                    document.getElementById('btnBreakEnd').disabled = true;
+                } else {
+                    document.getElementById('btnClockIn').disabled = false;
+                    document.getElementById('btnClockOut').disabled = false;
+                    document.getElementById('btnBreakStart').disabled = false;
+                    document.getElementById('btnBreakEnd').disabled = false;
+
+                    if (audit.status === "Verbal/Written Warning") {
+                        alertBanner.classList.remove('hidden');
+                        alertBanner.innerHTML = `
+                            <div class="bg-amber-100 border-l-4 border-amber-600 p-4 rounded-r-xl text-amber-950 shadow-sm text-xs">
+                                <p class="font-bold">⚠️ ATTENDANCE STANDING FLAG ALERT</p>
+                                <p class="mt-1">Attention <strong class="underline">${empName}</strong>: Automated logs show <strong>3 consecutive unexcused missed days</strong> in this work cycle. A Verbal/Written Warning Notice has been drafted in your profile.</p>
+                            </div>
+                        `;
+                    }
+                }
+            } else {
+                overlay.classList.add('hidden');
+                alertBanner.classList.add('hidden');
+                document.getElementById('btnClockIn').disabled = false;
+                document.getElementById('btnClockOut').disabled = false;
+                document.getElementById('btnBreakStart').disabled = false;
+                document.getElementById('btnBreakEnd').disabled = false;
+            }
+            renderEmployeeDashboard();
+        }
+
+        function calculateLateness(loginTime, assignedDutyTimeStr) {
+            if (!assignedDutyTimeStr) return { isLate: false, latenessText: 'On Time', latenessMins: 0, dutyDate: null };
+            let cleanStr = assignedDutyTimeStr.trim().toLowerCase().replace(/(\d+)(am|pm)/, "$1 $2");
+            const parts = cleanStr.split(' ');
+            if (parts.length < 2) return { isLate: false, latenessText: 'On Time', latenessMins: 0, dutyDate: null };
+
+            const timeParts = parts[0].split(':');
+            let dutyHour = parseInt(timeParts[0]);
+            const dutyMinute = parseInt(timeParts[1] || '0');
+            const ampm = parts[1];
+
+            if (isNaN(dutyHour)) return { isLate: false, latenessText: 'On Time', latenessMins: 0, dutyDate: null };
+            if (ampm === 'pm' && dutyHour < 12) dutyHour += 12;
+            if (ampm === 'am' && dutyHour === 12) dutyHour = 0;
+
+            const dutyDate = new Date(loginTime);
+            dutyDate.setHours(dutyHour, dutyMinute, 0, 0);
+
+            const diffMins = Math.floor((loginTime - dutyDate) / (1000 * 60));
+            if (diffMins > 5) {
+                return { isLate: true, latenessText: `LATE by ${diffMins} mins`, latenessMins: diffMins, dutyDate: dutyDate };
+            }
+            return { isLate: false, latenessText: 'On Time', latenessMins: 0, dutyDate: dutyDate };
+        }
+
+        function toggleModal(modalId, isOpen) {
+            const modal = document.getElementById(modalId);
+            if(isOpen) modal.classList.remove('hidden');
+            else modal.classList.add('hidden');
+        }
+
+        function handleViewSwitchSelection(val) {
+            if (val === 'admin') {
+                toggleModal('adminLoginModal', true);
+            } else {
+                document.getElementById('adminView').classList.add('hidden');
+                document.getElementById('employeeView').classList.remove('hidden');
+                handleTerminalUserChange();
+            }
+        }
+
+        function cancelAdminLogin() {
+            toggleModal('adminLoginModal', false);
+            document.getElementById('roleSwitcher').value = 'employee';
+            toggleAdminModalScreen('login'); 
+        }
+
+        function toggleAdminModalScreen(screen) {
+            const loginForm = document.getElementById('adminLoginForm');
+            const registerForm = document.getElementById('adminRegisterForm');
+            const modalTitle = document.getElementById('adminModalTitle');
+            const modalSub = document.getElementById('adminModalSub');
+            
+            if (screen === 'register') {
+                loginForm.classList.add('hidden');
+                registerForm.classList.remove('hidden');
+                modalTitle.textContent = "Create Admin Profile";
+                modalSub.textContent = "Register Additional Credentials";
+            } else {
+                registerForm.classList.add('hidden');
+                loginForm.classList.remove('hidden');
+                modalTitle.textContent = "Admin Gate Access";
+                modalSub.textContent = "Authorization Required";
+            }
+        }
+
+        async function handleCreateAdminUser(e) {
+            e.preventDefault();
+            const newUser = document.getElementById('newAdminUser').value.trim();
+            const newPass = document.getElementById('newAdminPass').value.trim();
+            
+            if (!newUser || !newPass) {
+                return triggerCustomAlert('Both fields are required to register a new administrator.');
+            }
+            if (adminUsers.some(a => a.user.toLowerCase() === newUser.toLowerCase())) {
+                return triggerCustomAlert('This administrative username is already registered in the system.');
+            }
+            
+            const newAccount = { user: newUser, pass: newPass };
+            adminUsers.push(newAccount);
+            
+            // STRICT PERSISTENCE WRITE
+            await saveAdminToDb(newAccount);
+
+            showNotificationToast(`Admin Account Created & Recorded: ${newUser}`, false);
+            triggerCustomAlert(`Success! Admin credentials registered for "${newUser}".\n\nYou can now log in using these credentials.`);
+            
+            e.target.reset();
+            toggleAdminModalScreen('login');
+        }
+
+        function processAdminLogin(e) {
+            e.preventDefault();
+            const userVal = document.getElementById('loginAdminUser').value.trim();
+            const passVal = document.getElementById('loginAdminPass').value;
+
+            const matchedAdmin = adminUsers.find(a => a.user.toLowerCase() === userVal.toLowerCase() && a.pass === passVal);
+
+            if (matchedAdmin) {
+                toggleModal('adminLoginModal', false);
+                document.getElementById('employeeView').classList.add('hidden');
+                document.getElementById('adminView').classList.remove('hidden');
+                renderAdminDashboard();
+                showNotificationToast(`Access Granted: Welcome back, ${matchedAdmin.user}!`, false);
+            } else {
+                triggerCustomAlert('Invalid Admin Username or Passkey. Please verify your credentials and try again.');
+            }
+        }
+
+        function logoutAdmin() {
+            document.getElementById('adminView').classList.add('hidden');
+            document.getElementById('employeeView').classList.remove('hidden');
+            document.getElementById('roleSwitcher').value = 'employee';
+            handleTerminalUserChange();
+        }
+
+        function switchAdminSubView(tabName) {
+            const logsTab = document.getElementById('adminSubTabLogs');
+            const compTab = document.getElementById('adminSubTabCompliance');
+            const logsSection = document.getElementById('adminTabSectionLogs');
+            const compSection = document.getElementById('adminTabSectionCompliance');
+
+            if (tabName === 'logs') {
+                logsTab.className = "px-4 py-1.5 text-xs font-bold rounded-md bg-slate-800 text-white shadow-sm transition";
+                compTab.className = "px-4 py-1.5 text-xs font-bold rounded-md text-slate-500 hover:text-slate-800 transition flex items-center gap-1";
+                logsSection.classList.remove('hidden');
+                compSection.classList.add('hidden');
+            } else {
+                compTab.className = "px-4 py-1.5 text-xs font-bold rounded-md bg-slate-800 text-white shadow-sm transition flex items-center gap-1";
+                logsTab.className = "px-4 py-1.5 text-xs font-bold rounded-md text-slate-500 hover:text-slate-800 transition";
+                logsSection.classList.add('hidden');
+                compSection.classList.remove('hidden');
+                renderComplianceAudit();
+            }
+        }
+
+        async function handleClockAction(actionType) {
+            const empName = document.getElementById('empSelect').value;
+            if(!empName) return triggerCustomAlert('Please select an active profile identity first.');
+
+            const chosenDateStr = document.getElementById('employeeAttendanceDate').value;
+            if(!chosenDateStr) return triggerCustomAlert('Please pick a valid log date.');
+
+            const empMeta = rawMasterDataset.find(e => e.name === empName);
+            let targetLogTime = new Date();
+            
+            const dateParts = chosenDateStr.split('-');
+            targetLogTime.setFullYear(parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2]));
+
+            let logIndex = attendanceLogs.findIndex(l => l.name === empName && l.date === chosenDateStr);
+
+            if(actionType === 'In') {
+                if(logIndex > -1 && attendanceLogs[logIndex].loginRaw) {
+                    return triggerCustomAlert(`A log-in record already exists for ${empName} on ${chosenDateStr}.`);
+                }
+
+                const expectedStartStr = document.getElementById('loginShiftStart').value;
+                const lateInfo = calculateLateness(targetLogTime, expectedStartStr);
+
+                const newLog = {
+                    name: empName,
+                    level: empMeta ? empMeta.level : 'Level A',
+                    date: chosenDateStr,
+                    expectedDuty: expectedStartStr,
+                    loginRaw: targetLogTime,
+                    logoutRaw: null,
+                    login: targetLogTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                    logout: '',
+                    isLate: lateInfo.isLate,
+                    latenessMins: lateInfo.latenessMins || 0,
+                    lateRemarks: lateInfo.latenessText,
+                    regHrs: '-', ot: '-', ut: '-',
+                    breakStartRaw: null,
+                    breakEndRaw: null,
+                    breakStart: '',
+                    breakEnd: '',
+                    breakDuration: 0,
+                    isOverbreak: false,
+                    overbreakMins: 0
+                };
+                
+                if(logIndex > -1) attendanceLogs[logIndex] = newLog;
+                else attendanceLogs.push(newLog);
+
+                await saveLogToDb(newLog);
+                
+                if (lateInfo.isLate) {
+                    if (!rosterRemarksDb[chosenDateStr]) {
+                        rosterRemarksDb[chosenDateStr] = {};
+                    }
+                    rosterRemarksDb[chosenDateStr][empName] = "Late";
+                    await saveRemarksToDb(chosenDateStr, rosterRemarksDb[chosenDateStr]);
+                    showNotificationToast(`Auto-updated "Late" remark for ${empName}`);
+                }
+
+                showNotificationToast(`Session Log-In Synchronized for ${empName}`);
+                triggerCustomAlert(`Log In registered successfully for ${chosenDateStr} at ${newLog.login}.\nStatus: ${lateInfo.latenessText}`);
+            } else {
+                if(logIndex === -1 || !attendanceLogs[logIndex].loginRaw) {
+                    return triggerCustomAlert(`Cannot locate a corresponding active Log-In session for ${chosenDateStr}.`);
+                }
+                
+                let currentLog = attendanceLogs[logIndex];
+                currentLog.logoutRaw = targetLogTime;
+                currentLog.logout = targetLogTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                
+                const expectedStartStr = currentLog.expectedDuty;
+                const lateInfo = calculateLateness(currentLog.loginRaw, expectedStartStr);
+                const dutyDate = lateInfo.dutyDate;
+
+                let regHrsValue = 0;
+                let otHrsValue = 0;
+                let utHrsValue = 0;
+
+                if (dutyDate) {
+                    const standardShiftEnd = new Date(dutyDate.getTime() + 8 * 60 * 60 * 1000);
+                    const latenessHours = lateInfo.isLate ? (lateInfo.latenessMins / 60) : 0;
+                    
+                    const startForReg = currentLog.loginRaw > dutyDate ? currentLog.loginRaw : dutyDate;
+                    const endForReg = currentLog.logoutRaw < standardShiftEnd ? currentLog.logoutRaw : standardShiftEnd;
+
+                    regHrsValue = (endForReg - startForReg) / (1000 * 60 * 60);
+                    if (regHrsValue < 0) regHrsValue = 0;
+                    
+                    const maxRegHoursAllowed = 8 - latenessHours;
+                    if (regHrsValue > maxRegHoursAllowed) regHrsValue = maxRegHoursAllowed;
+
+                    if (currentLog.logoutRaw > standardShiftEnd) {
+                        otHrsValue = (currentLog.logoutRaw - standardShiftEnd) / (1000 * 60 * 60);
+                    } else {
+                        otHrsValue = 0;
+                    }
+
+                    utHrsValue = 8 - regHrsValue;
+                    if (utHrsValue < 0) utHrsValue = 0;
+                } else {
+                    let diffHrs = (currentLog.logoutRaw - currentLog.loginRaw) / (1000 * 60 * 60);
+                    if (diffHrs < 0) diffHrs = 8;
+                    
+                    if (diffHrs >= 8) {
+                        regHrsValue = 8;
+                        otHrsValue = diffHrs - 8;
+                        utHrsValue = 0;
+                    } else {
+                        regHrsValue = diffHrs;
+                        otHrsValue = 0;
+                        utHrsValue = 8 - diffHrs;
+                    }
+                }
+
+                currentLog.regHrs = `${regHrsValue.toFixed(1)} hrs`;
+                currentLog.ot = `${otHrsValue.toFixed(1)} hrs`;
+                currentLog.ut = `${utHrsValue.toFixed(1)} hrs`;
+
+                await saveLogToDb(currentLog);
+
+                showNotificationToast(`Session Log-Out Synchronized for ${empName}`);
+                triggerCustomAlert(`Log Out recorded successfully for ${chosenDateStr} at ${currentLog.logout}\nRegular Hours: ${currentLog.regHrs}\nCalculated Undertime: ${currentLog.ut}`);
+            }
+
+            handleTerminalUserChange();
+            renderAdminDashboard();
+        }
+
+        async function handleBreakAction(actionType) {
+            const empName = document.getElementById('empSelect').value;
+            if(!empName) return triggerCustomAlert('Please choose an active profile identity first.');
+
+            const chosenDateStr = document.getElementById('employeeAttendanceDate').value;
+            if(!chosenDateStr) return triggerCustomAlert('Please pick a valid log date.');
+
+            let logIndex = attendanceLogs.findIndex(l => l.name === empName && l.date === chosenDateStr);
+
+            if(logIndex === -1 || !attendanceLogs[logIndex].loginRaw) {
+                return triggerCustomAlert(`Active log session required. You must Log-In first before starting a break.`);
+            }
+
+            let log = attendanceLogs[logIndex];
+            let rightNow = new Date();
+
+            if (actionType === 'Start') {
+                if (log.breakStartRaw) {
+                    return triggerCustomAlert(`An existing break session was already initiated today at ${log.breakStart}.`);
+                }
+
+                log.breakStartRaw = rightNow;
+                log.breakStart = rightNow.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                
+                if (!rosterRemarksDb[chosenDateStr]) {
+                    rosterRemarksDb[chosenDateStr] = {};
+                }
+                rosterRemarksDb[chosenDateStr][empName] = "On Break";
+                
+                await saveLogToDb(log);
+                await saveRemarksToDb(chosenDateStr, rosterRemarksDb[chosenDateStr]);
+
+                showNotificationToast(`Break Registered for ${empName}`);
+                triggerCustomAlert(`Break started successfully for ${empName} at ${log.breakStart}.\nDashboard Status: On Break.`);
+            } 
+            else if (actionType === 'End') {
+                if (!log.breakStartRaw) {
+                    return triggerCustomAlert(`You must initiate a break start first before concluding it.`);
+                }
+                if (log.breakEndRaw) {
+                    return triggerCustomAlert(`This break session was already completed at ${log.breakEnd}.`);
+                }
+
+                log.breakEndRaw = rightNow;
+                log.breakEnd = rightNow.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+                const simMode = document.getElementById('breakSimMode').value;
+                let calculatedMins = 0;
+
+                if (simMode === 'real') {
+                    const msDiff = log.breakEndRaw - log.breakStartRaw;
+                    calculatedMins = Math.floor(msDiff / (1000 * 60));
+                    if (calculatedMins <= 0) calculatedMins = 1;
+                } else {
+                    calculatedMins = parseInt(simMode);
+                }
+
+                log.breakDuration = calculatedMins;
+
+                if (calculatedMins > 60) {
+                    log.isOverbreak = true;
+                    log.overbreakMins = calculatedMins - 60;
+                    
+                    if (!rosterRemarksDb[chosenDateStr]) {
+                        rosterRemarksDb[chosenDateStr] = {};
+                    }
+                    rosterRemarksDb[chosenDateStr][empName] = "Overbreak";
+                    
+                    await saveLogToDb(log);
+                    await saveRemarksToDb(chosenDateStr, rosterRemarksDb[chosenDateStr]);
+
+                    showNotificationToast(`Auto-assigned "Overbreak" status warning.`);
+                    triggerCustomAlert(`Break Session Closed! Total Break Duration: ${calculatedMins} minutes.\n🚨 Overbreak registered: Exceeded standard limit by ${log.overbreakMins} minutes.`);
+                } else {
+                    log.isOverbreak = false;
+                    log.overbreakMins = 0;
+                    
+                    if (rosterRemarksDb[chosenDateStr] && rosterRemarksDb[chosenDateStr][empName] === "On Break") {
+                        delete rosterRemarksDb[chosenDateStr][empName];
+                    }
+                    
+                    await saveLogToDb(log);
+                    await saveRemarksToDb(chosenDateStr, rosterRemarksDb[chosenDateStr]);
+
+                    showNotificationToast(`Break session concluded on-time.`);
+                    triggerCustomAlert(`Break Session Closed! Total Break Duration: ${calculatedMins} minutes. (Completed On-Time within limit)`);
+                }
+            }
+
+            renderEmployeeDashboard();
+            renderAdminDashboard();
+        }
+
+        async function toggleLockUserOverride(name) {
+            const currentlyLocked = lockedUsersDb[name] === "LOCKED";
+            const alertMsg = currentlyLocked 
+                ? `Unlock terminal access point for ${name}?` 
+                : `Manually deactivate/lock terminal access point for ${name}?`;
+
+            triggerCustomConfirm(alertMsg, async function() {
+                if (currentlyLocked) {
+                    delete lockedUsersDb[name];
+                    await saveLockToDb(name, null);
+                    showNotificationToast(`Profile unlocked: ${name}`);
+                } else {
+                    lockedUsersDb[name] = "LOCKED";
+                    await saveLockToDb(name, "LOCKED");
+                    showNotificationToast(`Profile manually locked: ${name}`);
+                }
+                renderComplianceAudit();
+            });
+        }
+
+        function openWarningNotice(name, consecDays) {
+            const letterBox = document.getElementById('warningLetterContent');
+            const today = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            
+            const template = `MEDIA TRACK OPERATIONS GROUP
+COMPLIANCE & SYSTEM AUDIT RECTIFICATION REPORT
+
+Date: ${today}
+To: ${name} (Information Support Division Specialist)
+From: Media Track Management Leadership
+Subject: FIRST WARNING NOTICE - SYSTEMIC ABSENTEEISM DEVIATION
+
+This notice is issued under formal workflow policies to record an attendance standing deviation flag on your profile.
+
+Our real-time logging systems have tracked ${consecDays} CONSECUTIVE UNEXCUSED ABSENCES within your scheduled 5-day cycle. Regular shifts are integral to team delivery standards.
+
+Continued missed shifts without formal team leader endorsement will cause complete terminal deactivation and administrative review with the GS Team Leadership: Bonnie Patio, Thomas Lorenzo, and Marivel Noquillo.
+
+Please coordinate with your Supervisor immediately to resolve these scheduling flags.
+
+---------------------------------------------------
+Supervising Action: GS Team Leadership 
+Media Track - "Delivering the right info on time"`;
+
+            letterBox.textContent = template;
+            toggleModal('warningNoticeModal', true);
+        }
+
+        function deleteAttendanceLog(name, date) {
+            triggerCustomConfirm(`Are you sure you want to completely erase the logged attendance record for ${name} on ${date}? This action is irreversible.`, async function() {
+                attendanceLogs = attendanceLogs.filter(l => !(l.name === name && l.date === date));
+                await deleteLogFromDb(name, date);
+                renderAdminDashboard();
+                renderEmployeeDashboard();
+                showNotificationToast(`Log record removed successfully.`);
+            });
+        }
+
+        function copyWarningLetterToClipboard() {
+            const text = document.getElementById('warningLetterContent').textContent;
+            const tempTextarea = document.createElement('textarea');
+            tempTextarea.value = text;
+            document.body.appendChild(tempTextarea);
+            tempTextarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempTextarea);
+            showNotificationToast('Notice copied to clipboard!');
+        }
+
+        function deleteEmployee(name) {
+            triggerCustomConfirm(`Are you sure you want to completely delete ${name} from the active team rosters? This will erase all of their historical attendance logs and roster records completely.`, async function() {
+                rawMasterDataset = rawMasterDataset.filter(e => e.name !== name);
+                attendanceLogs = attendanceLogs.filter(l => l.name !== name);
+                
+                for (let dateKey in rosterRemarksDb) {
+                    if (rosterRemarksDb[dateKey] && rosterRemarksDb[dateKey][name]) {
+                        delete rosterRemarksDb[dateKey][name];
+                    }
+                }
+                
+                delete lockedUsersDb[name];
+                
+                // Firestore clear cascade
+                await deleteEmployeeFromDb(name);
+
+                const empSelect = document.getElementById('empSelect');
+                if (empSelect && empSelect.value === name) {
+                    empSelect.value = "";
+                    handleTerminalUserChange();
+                }
+                
+                populateEmployeeDropdown();
+                renderAdminDashboard();
+                renderEmployeeDashboard();
+                renderComplianceAudit(); 
+                
+                showNotificationToast(`Profile and all associated records of ${name} have been completely deleted.`);
+            });
+        }
+
+        async function handleRosterRemarksChange(name, value) {
+            const rosterDate = document.getElementById('rosterDateAnchor').value;
+            if (!rosterDate) return;
+
+            if (!rosterRemarksDb[rosterDate]) {
+                rosterRemarksDb[rosterDate] = {};
+            }
+
+            if (value === "") {
+                delete rosterRemarksDb[rosterDate][name];
+            } else {
+                rosterRemarksDb[rosterDate][name] = value;
+            }
+
+            await saveRemarksToDb(rosterDate, rosterRemarksDb[rosterDate]);
+            showNotificationToast(`Roster remark updated for ${name}`);
+        }
+
+        function matchesTimeFilter(logDateStr, anchorDateStr, targetMode) {
+            if (!logDateStr) return false;
+            if (targetMode === 'day') return logDateStr === anchorDateStr;
+            
+            const logDate = new Date(logDateStr);
+            const anchorDate = new Date(anchorDateStr);
+            if (isNaN(logDate.getTime()) || isNaN(anchorDate.getTime())) return false;
+
+            if (targetMode === 'month') {
+                return logDate.getFullYear() === anchorDate.getFullYear() && logDate.getMonth() === anchorDate.getMonth();
+            }
+
+            if (targetMode === 'week') {
+                const currentDayOfWeek = anchorDate.getDay(); 
+                const startOfWeek = new Date(anchorDate);
+                startOfWeek.setDate(anchorDate.getDate() - currentDayOfWeek);
+                startOfWeek.setHours(0,0,0,0);
+                const endOfWeek = new Date(startOfWeek);
+                endOfWeek.setDate(startOfWeek.getDate() + 6);
+                endOfWeek.setHours(23,59,59,999);
+                return logDate >= startOfWeek && logDate <= endOfWeek;
+            }
+            return true;
+        }
+
+        function filterEmployeeLogs(tab) {
+            currentEmpFilterTab = tab;
+            document.querySelectorAll('.emp-tab-btn').forEach(btn => btn.className = 'emp-tab-btn px-4 py-1.5 text-xs font-bold rounded-md text-slate-500 hover:text-slate-800 transition');
+            event.target.className = 'emp-tab-btn px-4 py-1.5 text-xs font-bold rounded-md bg-white shadow-sm text-slate-800 transition';
+            renderEmployeeDashboard();
+        }
+
+        function filterAdminLogs(tab) {
+            currentAdminFilterTab = tab;
+            document.querySelectorAll('.admin-tab-btn').forEach(btn => btn.className = 'admin-tab-btn px-3 py-1 font-bold rounded-md text-slate-600 transition');
+            event.target.className = 'admin-tab-btn px-3 py-1 font-bold rounded-md bg-slate-700 text-white transition';
+            renderAdminDashboard();
+        }
+
+        function filterRosterScope(tab) {
+            currentRosterFilterTab = tab;
+            document.querySelectorAll('.roster-tab-btn').forEach(btn => {
+                btn.className = 'roster-tab-btn flex-1 py-1 text-[10px] font-bold rounded-md text-slate-600 transition';
+            });
+            event.currentTarget.className = 'roster-tab-btn flex-1 py-1 text-[10px] font-bold rounded-md bg-slate-700 text-white transition';
+            renderAdminDashboard();
+        }
+
+        function filterComplianceRange(rangeScope) {
+            currentComplianceRangeTab = rangeScope;
+            document.querySelectorAll('[id^="compTabRange"]').forEach(btn => {
+                btn.className = 'px-3 py-1 text-[10px] font-bold rounded-md text-slate-500 hover:text-slate-800 transition';
+            });
+            if (rangeScope === 'day') document.getElementById('compTabRangeDay').className = 'px-3 py-1 text-[10px] font-bold rounded-md bg-slate-800 text-white transition';
+            if (rangeScope === 'week') document.getElementById('compTabRangeWeek').className = 'px-3 py-1 text-[10px] font-bold rounded-md bg-slate-800 text-white transition';
+            if (rangeScope === 'month') document.getElementById('compTabRangeMonth').className = 'px-3 py-1 text-[10px] font-bold rounded-md bg-slate-800 text-white transition';
+            renderComplianceAudit();
+        }
+
+        function renderEmployeeDashboard() {
+            const empName = document.getElementById('empSelect').value;
+            const tbody = document.getElementById('employeeLogTableBody');
+            tbody.innerHTML = '';
+            if(!empName) return;
+
+            const chosenDateStr = document.getElementById('employeeAttendanceDate').value || new Date().toISOString().split('T')[0];
+            let filtered = attendanceLogs.filter(l => l.name === empName && matchesTimeFilter(l.date, chosenDateStr, currentEmpFilterTab));
+            
+            filtered.forEach(log => {
+                const tr = document.createElement('tr');
+                const statusColor = log.isLate ? 'text-rose-600 bg-rose-50 border border-rose-100 px-2 py-0.5 rounded-md' : 'text-emerald-600';
+                
+                let breakHtml = `<span class="text-slate-400 font-mono text-xs">No Break Logged</span>`;
+                if (log.breakStartRaw) {
+                    if (!log.breakEndRaw) {
+                        breakHtml = `
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-100 text-amber-900 font-bold text-[10px] animate-pulse">
+                                ☕ On Break (${log.breakStart})
+                            </span>
+                        `;
+                    } else {
+                        const breakColor = log.isOverbreak ? 'bg-rose-100 text-rose-900 border border-rose-200' : 'bg-slate-100 text-slate-800 border border-slate-200';
+                        breakHtml = `
+                            <div class="flex flex-col gap-1">
+                                <span class="font-semibold text-xs text-slate-500">${log.breakStart} - ${log.breakEnd}</span>
+                                <span class="text-[9px] font-bold px-2 py-0.5 rounded-md self-start ${breakColor}">
+                                    ${log.breakDuration} Mins
+                                    ${log.isOverbreak ? `🚨 (Overbreak: ${log.overbreakMins}m)` : '(On Time)'}
+                                </span>
+                            </div>
+                        `;
+                    }
+                }
+
+                tr.innerHTML = `
+                    <td class="p-3">${log.date}</td>
+                    <td class="p-3 font-semibold text-slate-500">${log.expectedDuty}</td>
+                    <td class="p-3 font-bold">
+                        <span class="${statusColor}">${log.login}</span> 
+                        ${log.isLate ? `<span class="text-[10px] text-rose-600 font-semibold block">${log.lateRemarks}</span>` : ''}
+                    </td>
+                    <td class="p-3">${breakHtml}</td>
+                    <td class="p-3 text-rose-600 font-bold">${log.logout || '-'}</td>
+                    <td class="p-3 font-semibold">${log.regHrs}</td>
+                    <td class="p-3 text-amber-700 font-bold">${log.ot}</td>
+                    <td class="p-3 text-rose-700 font-bold">${log.ut}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function getFilteredAdminLogs(logs, anchorDateStr, targetMode) {
+            let filteredLogs = logs.filter(l => matchesTimeFilter(l.date, anchorDateStr, targetMode));
+            const statusFilter = document.getElementById('adminStatusFilter').value;
+            
+            if (statusFilter === 'late') {
+                filteredLogs = filteredLogs.filter(log => log.isLate === true);
+            } else if (statusFilter === 'ontime') {
+                filteredLogs = filteredLogs.filter(log => log.isLate === false);
+            } else if (statusFilter === 'onbreak') {
+                filteredLogs = filteredLogs.filter(log => log.breakStartRaw && !log.breakEndRaw);
+            } else if (statusFilter === 'overbreak') {
+                filteredLogs = filteredLogs.filter(log => log.isOverbreak === true);
+            } else if (statusFilter === 'undertime') {
+                filteredLogs = filteredLogs.filter(log => parseFloat(log.ut) > 0);
+            } else if (statusFilter === 'shift12') {
+                filteredLogs = filteredLogs.filter(log => log.expectedDuty.toLowerCase() === '12:00 am');
+            } else if (statusFilter === 'shift2') {
+                filteredLogs = filteredLogs.filter(log => log.expectedDuty.toLowerCase() === '2:00 am');
+            } else if (statusFilter === 'shift3') {
+                filteredLogs = filteredLogs.filter(log => log.expectedDuty.toLowerCase() === '3:00 am');
+            } else if (statusFilter === 'late12') {
+                filteredLogs = filteredLogs.filter(log => log.isLate === true && log.expectedDuty.toLowerCase() === '12:00 am');
+            } else if (statusFilter === 'late2') {
+                filteredLogs = filteredLogs.filter(log => log.isLate === true && log.expectedDuty.toLowerCase() === '2:00 am');
+            } else if (statusFilter === 'late3') {
+                filteredLogs = filteredLogs.filter(log => log.isLate === true && log.expectedDuty.toLowerCase() === '3:00 am');
+            } else if (statusFilter === 'late_both') {
+                filteredLogs = filteredLogs.filter(log => log.isLate === true && (log.expectedDuty.toLowerCase() === '12:00 am' || log.expectedDuty.toLowerCase() === '2:00 am'));
+            }
+            return filteredLogs;
+        }
+
+        function renderAdminDashboard() {
+            const tbody = document.getElementById('adminLogTableBody');
+            if (tbody) {
+                tbody.innerHTML = '';
+                const anchorDateStr = document.getElementById('adminDateAnchor').value || new Date().toISOString().split('T')[0];
+                let filteredLogs = getFilteredAdminLogs(attendanceLogs, anchorDateStr, currentAdminFilterTab);
+
+                const sortOrder = document.getElementById('adminSortOrder').value;
+                if (sortOrder === 'name') {
+                    filteredLogs.sort((a, b) => a.name.localeCompare(b.name));
+                } else if (sortOrder === 'login') {
+                    filteredLogs.sort((a, b) => a.login.localeCompare(b.login));
+                } else if (sortOrder === 'ot') {
+                    filteredLogs.sort((a, b) => (parseFloat(b.ot) || 0) - (parseFloat(a.ot) || 0));
+                } else if (sortOrder === 'ut') {
+                    filteredLogs.sort((a, b) => (parseFloat(b.ut) || 0) - (parseFloat(a.ut) || 0));
+                }
+
+                filteredLogs.forEach(log => {
+                    const tr = document.createElement('tr');
+                    const lateLabel = log.isLate ? `<span class="text-rose-600 font-bold text-[10px] block">${log.lateRemarks}</span>` : '<span class="text-emerald-600 text-[10px] font-semibold block">(On Time)</span>';
+                    
+                    let breakCellHtml = `<span class="text-slate-400 font-mono text-[11px]">-</span>`;
+                    if (log.breakStartRaw) {
+                        if (!log.breakEndRaw) {
+                            breakCellHtml = `
+                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 font-bold text-[9px] animate-pulse">
+                                    On Break since ${log.breakStart}
+                                </span>
+                            `;
+                        } else {
+                            const breakColor = log.isOverbreak ? 'bg-rose-100 text-rose-900 border border-rose-200' : 'bg-slate-100 text-slate-800 border border-slate-200';
+                            breakCellHtml = `
+                                <div class="flex flex-col">
+                                    <span class="text-[10px] text-slate-500">${log.breakStart} - ${log.breakEnd}</span>
+                                    <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-md self-start mt-0.5 ${breakColor}">
+                                        ${log.breakDuration} Mins ${log.isOverbreak ? `🚨 Over (${log.overbreakMins}m)` : ''}
+                                    </span>
+                                </div>
+                            `;
+                        }
+                    }
+
+                    tr.innerHTML = `
+                        <td class="p-3 font-bold text-slate-900">
+                            <div class="flex items-center justify-between gap-2 max-w-[200px]">
+                                <span class="truncate">${log.name}</span>
+                                <button onclick="deleteAttendanceLog('${log.name}', '${log.date}')" class="text-rose-500 hover:text-rose-700 hover:bg-rose-50 p-1.5 rounded-lg transition-colors shrink-0" title="Erase Log Record">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                </button>
+                            </div>
+                        </td>
+                        <td class="p-3">${log.level}</td>
+                        <td class="p-3">${log.date}</td>
+                        <td class="p-3 font-mono">${log.expectedDuty}</td>
+                        <td class="p-3 font-bold">
+                            <span>${log.login}</span>
+                            ${lateLabel}
+                        </td>
+                        <td class="p-3">${breakCellHtml}</td>
+                        <td class="p-3 text-rose-600 font-bold">${log.logout || '-'}</td>
+                        <td class="p-3 font-medium">${log.regHrs}</td>
+                        <td class="p-3 text-amber-700 font-bold">${log.ot}</td>
+                        <td class="p-3 text-rose-600 font-bold">${log.ut}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+
+            const dir = document.getElementById('adminEmpList');
+            if (dir) {
+                dir.innerHTML = '';
+                const remarksFilterValue = document.getElementById('rosterRemarksFilter').value;
+                const selectedRosterDate = document.getElementById('rosterDateAnchor').value || new Date().toISOString().split('T')[0];
+                
+                if (currentRosterFilterTab === 'day') {
+                    rawMasterDataset.forEach(emp => {
+                        const empRemark = rosterRemarksDb[selectedRosterDate]?.[emp.name] || "";
+                        const empDaysOff = emp.daysOff || ["Saturday", "Sunday"];
+                        
+                        if (remarksFilterValue === 'none' && empRemark !== "") return;
+                        if (remarksFilterValue !== 'all' && remarksFilterValue !== 'none' && empRemark !== remarksFilterValue) return;
+
+                        const div = document.createElement('div');
+                        div.className = "flex justify-between items-center text-xs p-2 bg-slate-50 hover:bg-slate-100 rounded-xl border border-slate-200/60 gap-2 transition";
+                        div.innerHTML = `
+                            <div class="flex flex-col min-w-0 flex-1">
+                                <span class="font-bold text-slate-800 truncate">${emp.name}</span>
+                                <span class="text-[9px] text-slate-400 font-bold uppercase tracking-wider">${emp.position} - ${emp.dutyTime} (${emp.level})</span>
+                                <span class="text-[8.5px] text-indigo-600 font-bold -mt-0.5 truncate" title="Designated Off: ${empDaysOff.join(', ')}">📴 Off: ${empDaysOff.join(', ')}</span>
+                            </div>
+                            <div class="flex items-center gap-1 shrink-0">
+                                <select onchange="handleRosterRemarksChange('${emp.name}', this.value); renderAdminDashboard();" class="text-[10px] bg-white border border-slate-200 rounded-md px-1 py-0.5 font-bold text-slate-700 focus:outline-none">
+                                    <option value="">-- Remarks --</option>
+                                    <option value="DC" ${empRemark === 'DC' ? 'selected' : ''}>DC</option>
+                                    <option value="Absent" ${empRemark === 'Absent' ? 'selected' : ''}>Absent</option>
+                                    <option value="Late" ${empRemark === 'Late' ? 'selected' : ''}>Late</option>
+                                    <option value="On Break" ${empRemark === 'On Break' ? 'selected' : ''}>On Break</option>
+                                    <option value="Overbreak" ${empRemark === 'Overbreak' ? 'selected' : ''}>Overbreak</option>
+                                    <option value="Sick" ${empRemark === 'Sick' ? 'selected' : ''}>Sick</option>
+                                    <option value="on Leave" ${empRemark === 'on Leave' ? 'selected' : ''}>on Leave</option>
+                                </select>
+                                <button onclick="deleteEmployee('${emp.name}')" class="text-rose-500 hover:text-rose-700 p-0.5 font-bold" title="Delete Profile">🗑️</button>
+                            </div>
+                        `;
+                        dir.appendChild(div);
+                    });
+                } else {
+                    let matchedRemarksEntries = [];
+
+                    for (let dateKey in rosterRemarksDb) {
+                        if (matchesTimeFilter(dateKey, selectedRosterDate, currentRosterFilterTab)) {
+                            for (let empName in rosterRemarksDb[dateKey]) {
+                                const remarkVal = rosterRemarksDb[dateKey][empName];
+                                if (!remarkVal) continue;
+
+                                if (remarksFilterValue === 'none') continue; 
+                                if (remarksFilterValue !== 'all' && remarksFilterValue !== remarkVal) continue;
+
+                                const empMeta = rawMasterDataset.find(e => e.name === empName);
+                                if (empMeta) {
+                                    matchedRemarksEntries.push({
+                                        name: empName,
+                                        date: dateKey,
+                                        remark: remarkVal,
+                                        position: empMeta.position,
+                                        level: empMeta.level
+                                    });
+                                }
+                            }
+                        }
+                    }
+
+                    if (matchedRemarksEntries.length === 0) {
+                        dir.innerHTML = `<p class="text-[10px] text-slate-400 text-center py-4 font-bold">No historical remarks recorded.</p>`;
+                    } else {
+                        matchedRemarksEntries.sort((a, b) => b.date.localeCompare(a.date));
+
+                        matchedRemarksEntries.forEach(entry => {
+                            const badgeColor = entry.remark === 'DC' ? 'bg-indigo-100 text-indigo-900 border border-indigo-200' :
+                                               entry.remark === 'Absent' ? 'bg-rose-100 text-rose-900 border border-rose-200' :
+                                               entry.remark === 'Late' ? 'bg-amber-100 text-amber-900 border border-amber-200' :
+                                               entry.remark === 'On Break' ? 'bg-sky-100 text-sky-900 border border-sky-200' :
+                                               entry.remark === 'Overbreak' ? 'bg-rose-100 text-rose-950 border border-rose-300' :
+                                               entry.remark === 'Sick' ? 'bg-orange-100 text-orange-900 border border-orange-200' : 'bg-blue-100 text-blue-900 border border-blue-200';
+
+                            const div = document.createElement('div');
+                            div.className = "flex flex-col text-[11px] p-2 bg-slate-50 border border-slate-200 rounded-xl gap-1";
+                            div.innerHTML = `
+                                <div class="flex justify-between items-start">
+                                    <span class="font-bold text-slate-800">${entry.name}</span>
+                                    <span class="px-1.5 py-0.5 rounded-md text-[8px] font-extrabold tracking-widest uppercase ${badgeColor}">${entry.remark}</span>
+                                </div>
+                                <div class="flex justify-between text-[9px] text-slate-400 font-mono">
+                                    <span>${entry.position} (${entry.level})</span>
+                                    <span class="font-bold text-slate-500">${entry.date}</span>
+                                </div>
+                            `;
+                            dir.appendChild(dir.firstChild ? div : div);
+                            dir.appendChild(div);
+                        });
+                    }
+                }
+            }
+
+            updateLockedBadgeCounter();
+        }
+
+        function renderComplianceAudit() {
+            const tbody = document.getElementById('complianceAuditTableBody');
+            const thead = document.getElementById('complianceGridHeader');
+            if (!tbody || !thead) return;
+            tbody.innerHTML = '';
+            thead.innerHTML = '';
+
+            const anchorDateStr = document.getElementById('complianceWeekAnchor').value || new Date().toISOString().split('T')[0];
+
+            if (currentComplianceRangeTab === 'day') {
+                // SINGLE-DAY SNAPSHOT
+                thead.innerHTML = `
+                    <tr>
+                        <th class="p-3">Employee Name</th>
+                        <th class="p-3">Shift Duty & Role</th>
+                        <th class="p-3 text-center">Roster Status</th>
+                        <th class="p-3 text-center">Clock In</th>
+                        <th class="p-3 text-center">Break Session</th>
+                        <th class="p-3 text-center">Clock Out</th>
+                        <th class="p-3 text-center">Work Hrs</th>
+                        <th class="p-3 text-center">Overtime</th>
+                        <th class="p-3 text-center">Undertime</th>
+                    </tr>
+                `;
+
+                rawMasterDataset.forEach(emp => {
+                    const matchedLog = attendanceLogs.find(l => l.name === emp.name && l.date === anchorDateStr);
+                    const remark = rosterRemarksDb[anchorDateStr]?.[emp.name] || "No Remarks";
+                    const tr = document.createElement('tr');
+                    tr.className = "hover:bg-slate-50/50 border-b border-slate-100 transition";
+
+                    let statusBadge = `<span class="px-2 py-0.5 rounded bg-slate-100 text-slate-600 text-[9px] font-bold">Untracked</span>`;
+                    if (remark !== "No Remarks") {
+                        const colors = remark === "DC" ? "bg-indigo-100 text-indigo-900" :
+                                       remark === "Absent" ? "bg-rose-100 text-rose-900 animate-pulse" : "bg-amber-100 text-amber-900";
+                        statusBadge = `<span class="px-2 py-0.5 rounded text-[9px] font-bold ${colors}">${remark}</span>`;
+                    } else if (matchedLog) {
+                        statusBadge = `<span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 text-[9px] font-bold">Present</span>`;
+                    }
+
+                    tr.innerHTML = `
+                        <td class="p-3 font-bold text-slate-800">${emp.name}</td>
+                        <td class="p-3 text-slate-500 font-semibold">${emp.position} (${emp.dutyTime})</td>
+                        <td class="p-3 text-center">${statusBadge}</td>
+                        <td class="p-3 text-center font-bold text-slate-700">${matchedLog ? matchedLog.login : "-"}</td>
+                        <td class="p-3 text-center font-semibold text-slate-600">${matchedLog && matchedLog.breakDuration ? `${matchedLog.breakDuration}m` : "-"}</td>
+                        <td class="p-3 text-center font-bold text-slate-700">${matchedLog ? (matchedLog.logout || "Active") : "-"}</td>
+                        <td class="p-3 text-center font-bold text-slate-800">${matchedLog ? matchedLog.regHrs : "-"}</td>
+                        <td class="p-3 text-center font-bold text-amber-700">${matchedLog ? matchedLog.ot : "-"}</td>
+                        <td class="p-3 text-center font-bold text-rose-700">${matchedLog ? matchedLog.ut : "-"}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+
+            } else if (currentComplianceRangeTab === 'week') {
+                // STANDARD 7-DAY COMPLIANCE WEEK GRID (Mon-Sun)
+                thead.innerHTML = `
+                    <tr>
+                        <th class="p-3">Employee Name</th>
+                        <th class="p-3">Role & Level</th>
+                        <th class="p-3 text-center">Mon</th>
+                        <th class="p-3 text-center">Tue</th>
+                        <th class="p-3 text-center">Wed</th>
+                        <th class="p-3 text-center">Thu</th>
+                        <th class="p-3 text-center">Fri</th>
+                        <th class="p-3 text-center">Sat</th>
+                        <th class="p-3 text-center">Sun</th>
+                        <th class="p-3 text-center">Total Missed</th>
+                        <th class="p-3 text-center">Streak</th>
+                        <th class="p-3">Standing Flag</th>
+                        <th class="p-3 text-center">Actions</th>
+                    </tr>
+                `;
+
+                rawMasterDataset.forEach(emp => {
+                    const audit = auditEmployeeAttendance(emp.name, anchorDateStr);
+                    const tr = document.createElement('tr');
+                    tr.className = "hover:bg-slate-50/50 border-b border-slate-100 transition duration-150";
+
+                    let statusBadge = '';
+                    if (audit.status === "Lock the User") {
+                        statusBadge = `<span class="px-2.5 py-1 text-[10px] font-extrabold tracking-wider rounded-full bg-rose-100 text-rose-900 border border-rose-300 inline-flex items-center gap-1">🔒 LOCKED</span>`;
+                    } else if (audit.status === "Verbal/Written Warning") {
+                        statusBadge = `<span class="px-2.5 py-1 text-[10px] font-extrabold tracking-wider rounded-full bg-amber-100 text-amber-900 border border-amber-300 inline-flex items-center gap-1">⚠️ WARNING</span>`;
+                    } else {
+                        statusBadge = `<span class="px-2.5 py-1 text-[10px] font-extrabold tracking-wider rounded-full bg-emerald-100 text-emerald-900 border border-emerald-200 inline-flex items-center gap-1">🟢 ACTIVE</span>`;
+                    }
+
+                    let daysHtml = '';
+                    audit.dailyStatus.forEach(day => {
+                        let circleColor = 'bg-slate-200 border-slate-300 text-slate-400';
+                        let titleText = `${day.date}: Untracked`;
+
+                        if (day.status === "Present") {
+                            circleColor = 'bg-emerald-600 border-emerald-700 text-white';
+                            titleText = `${day.date}: Logged In`;
+                        } else if (day.status === "Excused") {
+                            circleColor = 'bg-amber-400 border-amber-500 text-slate-900';
+                            titleText = `${day.date}: Excused (${day.remark})`;
+                        } else if (day.status === "Absent") {
+                            circleColor = 'bg-rose-600 border-rose-700 text-white';
+                            titleText = `${day.date}: Missed Shift (Unexcused)`;
+                        } else if (day.status === "Pending") {
+                            circleColor = 'bg-slate-200 border-slate-300 text-slate-400';
+                            titleText = `${day.date}: Future Schedule`;
+                        } else if (day.status === "Rest") {
+                            circleColor = 'bg-slate-100 border-slate-200 text-slate-400';
+                            titleText = `${day.date}: Scheduled Rest Day`;
+                        }
+
+                        daysHtml += `
+                            <td class="p-3 text-center">
+                                <span class="inline-block w-6 h-6 rounded-full border text-[10px] font-extrabold leading-6 ${circleColor} select-none cursor-help shadow-xs" title="${titleText}">
+                                    ${day.status === "Rest" ? "O" : day.status.charAt(0)}
+                                </span>
+                            </td>
+                        `;
+                    });
+
+                    let actionsHtml = `<div class="flex items-center justify-center gap-1.5">`;
+                    
+                    if (audit.maxConsecutive >= 3) {
+                        actionsHtml += `
+                            <button onclick="openWarningNotice('${emp.name}', ${audit.maxConsecutive})" class="bg-amber-500 hover:bg-amber-600 text-white px-2 py-1 rounded text-[10px] font-bold transition shadow-xs" title="Review formal warning letter draft">
+                                Review Warning
+                            </button>
+                        `;
+                    } else {
+                        actionsHtml += `<span class="text-slate-400 text-[10px] italic">No warning criteria</span>`;
+                    }
+
+                    const isLocked = lockedUsersDb[emp.name] === "LOCKED" || audit.totalAbsences > 3;
+                    actionsHtml += `
+                        <button onclick="toggleLockUserOverride('${emp.name}')" class="px-2 py-1 rounded text-[10px] font-bold transition shadow-xs ${
+                            isLocked ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-rose-600 hover:bg-rose-700 text-white'
+                        }">
+                            ${isLocked ? 'Unlock access' : 'Restrict Profile'}
+                        </button>
+                    `;
+                    actionsHtml += `</div>`;
+
+                    tr.innerHTML = `
+                        <td class="p-3 font-bold text-slate-800">${emp.name}</td>
+                        <td class="p-3 text-xs text-slate-500">
+                            <div class="font-bold text-slate-700">${emp.position}</div>
+                            <div class="text-[9px] font-mono">${emp.level}</div>
+                        </td>
+                        ${daysHtml}
+                        <td class="p-3 text-center font-bold text-rose-600">${audit.totalAbsences} / 5</td>
+                        <td class="p-3 text-center font-bold text-slate-700">${audit.maxConsecutive} days</td>
+                        <td class="p-3">${statusBadge}</td>
+                        <td class="p-3 text-center">${actionsHtml}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+
+            } else if (currentComplianceRangeTab === 'month') {
+                // FULL CALENDAR MONTH METRIC SUMMARY
+                thead.innerHTML = `
+                    <tr>
+                        <th class="p-3">Employee Name</th>
+                        <th class="p-3">Shift Duty & Role</th>
+                        <th class="p-3 text-center">Scheduled Work Days</th>
+                        <th class="p-3 text-center">Days Present</th>
+                        <th class="p-3 text-center">Unexcused Absences</th>
+                        <th class="p-3 text-center">Excused Absences</th>
+                        <th class="p-3 text-center">Compliance Score</th>
+                        <th class="p-3 text-center">Monthly Evaluation</th>
+                    </tr>
+                `;
+
+                const selectedMonthDate = new Date(anchorDateStr);
+                const targetYear = selectedMonthDate.getFullYear();
+                const targetMonth = selectedMonthDate.getMonth();
+
+                // Generate array of calendar days for that selected month
+                const daysInMonth = new Date(targetYear, targetMonth + 1, 0).getDate();
+                const calendarDays = [];
+                for (let d = 1; d <= daysInMonth; d++) {
+                    const monthDayDate = new Date(targetYear, targetMonth, d);
+                    calendarDays.push(monthDayDate.toISOString().split('T')[0]);
+                }
+
+                rawMasterDataset.forEach(emp => {
+                    let totalWorkDays = 0;
+                    let daysPresent = 0;
+                    let unexcused = 0;
+                    let excused = 0;
+
+                    const daysOff = emp.daysOff || ["Saturday", "Sunday"];
+
+                    calendarDays.forEach(dateStr => {
+                        const dayDate = new Date(dateStr);
+                        const dayName = dayDate.toLocaleDateString('en-US', { weekday: 'long' });
+
+                        // Skip if scheduled rest day off
+                        if (daysOff.includes(dayName)) return;
+
+                        totalWorkDays++;
+
+                        const hasLog = attendanceLogs.some(l => l.name === emp.name && l.date === dateStr && l.loginRaw);
+                        const remark = rosterRemarksDb[dateStr]?.[emp.name] || "";
+
+                        if (hasLog) {
+                            daysPresent++;
+                        } else if (remark === "Sick" || remark === "on Leave") {
+                            excused++;
+                        } else {
+                            const todayStr = new Date().toISOString().split('T')[0];
+                            if (dateStr <= todayStr || remark === "Absent") {
+                                unexcused++;
+                            }
+                        }
+                    });
+
+                    const complianceScore = totalWorkDays > 0 ? Math.round(((daysPresent + excused) / totalWorkDays) * 100) : 100;
+                    let ratingText = `<span class="px-2 py-0.5 rounded text-[9px] bg-emerald-100 text-emerald-900 font-bold">Excellent</span>`;
+                    if (complianceScore < 70) {
+                        ratingText = `<span class="px-2 py-0.5 rounded text-[9px] bg-rose-100 text-rose-900 font-bold">Critical Violation</span>`;
+                    } else if (complianceScore < 90) {
+                        ratingText = `<span class="px-2 py-0.5 rounded text-[9px] bg-amber-100 text-amber-900 font-bold">Needs Improvement</span>`;
+                    }
+
+                    const tr = document.createElement('tr');
+                    tr.className = "hover:bg-slate-50/50 border-b border-slate-100 transition";
+                    tr.innerHTML = `
+                        <td class="p-3 font-bold text-slate-800">${emp.name}</td>
+                        <td class="p-3 text-slate-500 font-semibold">${emp.position} (${emp.dutyTime})</td>
+                        <td class="p-3 text-center font-bold text-slate-700">${totalWorkDays}</td>
+                        <td class="p-3 text-center font-bold text-emerald-700">${daysPresent}</td>
+                        <td class="p-3 text-center font-bold text-rose-600">${unexcused}</td>
+                        <td class="p-3 text-center font-bold text-amber-600">${excused}</td>
+                        <td class="p-3 text-center font-extrabold text-slate-900">${complianceScore}%</td>
+                        <td class="p-3 text-center">${ratingText}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+
+            updateLockedBadgeCounter();
+        }
+
+        function updateLockedBadgeCounter() {
+            const badge = document.getElementById('lockedCountBadge');
+            if (!badge) return;
+            
+            const weekAnchorDate = document.getElementById('complianceWeekAnchor').value || new Date().toISOString().split('T')[0];
+            let lockedCount = 0;
+
+            rawMasterDataset.forEach(emp => {
+                const audit = auditEmployeeAttendance(emp.name, weekAnchorDate);
+                if (audit.status === "Lock the User") {
+                    lockedCount++;
+                }
+            });
+
+            if (lockedCount > 0) {
+                badge.textContent = lockedCount;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
+
+        async function handleEmployeeSelfRegister(e) {
+            e.preventDefault();
+            const dutyTimeVal = document.getElementById('regEmpDutyTime').value.trim();
+            const levelVal = document.getElementById('regEmpLevel').value;
+            const positionVal = document.getElementById('regEmpPosition').value;
+            const nameVal = document.getElementById('regEmpName').value.trim();
+            
+            if (rawMasterDataset.some(emp => emp.name.toLowerCase() === nameVal.toLowerCase())) {
+                return triggerCustomAlert('This profile name is already registered in our active database.');
+            }
+
+            if (!dutyTimeVal.toLowerCase().includes('am') && !dutyTimeVal.toLowerCase().includes('pm')) {
+                return triggerCustomAlert('Please specify AM or PM on your Shift Start field (e.g. 12:00 AM).');
+            }
+
+            const daysOffCheckboxes = document.querySelectorAll('input[name="regEmpDaysOff"]:checked');
+            const selectedDaysOff = Array.from(daysOffCheckboxes).map(cb => cb.value);
+
+            if (selectedDaysOff.length === 0) {
+                return triggerCustomAlert('Please designate at least one official Rest Day.');
+            }
+
+            const newEmployee = {
+                name: nameVal, 
+                position: positionVal, 
+                level: levelVal, 
+                dutyTime: dutyTimeVal, 
+                status: "ACTIVE",
+                daysOff: selectedDaysOff
+            };
+
+            rawMasterDataset.push(newEmployee);
+            
+            // PERSIST TO DATABASE
+            await saveEmployeeToDb(newEmployee);
+
+            triggerCustomAlert('Profile saved and registered successfully!');
+            showNotificationToast(`Registered profile: ${nameVal}`);
+            e.target.reset();
+            
+            document.querySelectorAll('input[name="regEmpDaysOff"]').forEach(cb => {
+                if (cb.value === "Saturday" || cb.value === "Sunday") {
+                    cb.checked = true;
+                } else {
+                    cb.checked = false;
+                }
+            });
+
+            toggleModal('registerModal', false);
+            populateEmployeeDropdown();
+            renderAdminDashboard();
+        }
+
+        function exportRosterDatabase() {
+            const remarksFilterValue = document.getElementById('rosterRemarksFilter').value;
+            const selectedRosterDate = document.getElementById('rosterDateAnchor').value || new Date().toISOString().split('T')[0];
+            
+            let exportPayload = [];
+
+            if (currentRosterFilterTab === 'day') {
+                rawMasterDataset.forEach(emp => {
+                    const empRemark = rosterRemarksDb[selectedRosterDate]?.[emp.name] || "No Remarks";
+                    const empDaysOff = emp.daysOff || ["Saturday", "Sunday"];
+                    if (remarksFilterValue === 'none' && empRemark !== "No Remarks") return;
+                    if (remarksFilterValue !== 'all' && remarksFilterValue !== 'none' && empRemark !== remarksFilterValue) return;
+
+                    exportPayload.push({
+                        "Employee Name": emp.name,
+                        "Position": emp.position,
+                        "Grade Level": emp.level,
+                        "Assigned Shift": emp.dutyTime,
+                        "Designated Days Off": empDaysOff.join(', '),
+                        "Roster Date": selectedRosterDate,
+                        "Remarks": empRemark
+                    });
+                });
+            } else {
+                for (let dateKey in rosterRemarksDb) {
+                    if (matchesTimeFilter(dateKey, selectedRosterDate, currentRosterFilterTab)) {
+                        for (let empName in rosterRemarksDb[dateKey]) {
+                            const remarkVal = rosterRemarksDb[dateKey][empName];
+                            if (!remarkVal) continue;
+                            if (remarksFilterValue !== 'all' && remarksFilterValue !== remarkVal) continue;
+
+                            const empMeta = rawMasterDataset.find(e => e.name === empName);
+                            const empDaysOff = empMeta && empMeta.daysOff ? empMeta.daysOff : ["Saturday", "Sunday"];
+                            exportPayload.push({
+                                "Employee Name": empName,
+                                "Position": empMeta ? empMeta.position : "N/A",
+                                "Grade Level": empMeta ? empMeta.level : "N/A",
+                                "Assigned Shift": empMeta ? empMeta.dutyTime : "N/A",
+                                "Designated Days Off": empDaysOff.join(', '),
+                                "Roster Date": dateKey,
+                                "Remarks": remarkVal
+                            });
+                        }
+                    }
+                }
+            }
+
+            if (exportPayload.length === 0) {
+                return triggerCustomAlert('No records tracked matching the current dashboard selections.');
+            }
+
+            const worksheet = XLSX.utils.json_to_sheet(exportPayload);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Remarks History");
+            XLSX.writeFile(workbook, `Roster_Remarks_Report_${selectedRosterDate}.xlsx`);
+        }
+
+        function exportAttendanceLogs() {
+            const anchorDateStr = document.getElementById('adminDateAnchor').value || new Date().toISOString().split('T')[0];
+            let filteredLogs = getFilteredAdminLogs(attendanceLogs, anchorDateStr, currentAdminFilterTab);
+
+            if (filteredLogs.length === 0) {
+                return triggerCustomAlert('No active logs match the filtered criteria to export.');
+            }
+
+            let exportPayload = filteredLogs.map(log => {
+                const audit = auditEmployeeAttendance(log.name, log.date);
+                
+                return {
+                    "Employee Name": log.name,
+                    "Level": log.level,
+                    "Date": log.date,
+                    "Expected Shift": log.expectedDuty,
+                    "Log In Time": log.login,
+                    "Lateness Flag": log.isLate ? log.lateRemarks : "On Time",
+                    "Break Start": log.breakStart || 'N/A',
+                    "Break End": log.breakEnd || 'N/A',
+                    "Break Duration": log.breakStartRaw ? `${log.breakDuration} mins` : 'N/A',
+                    "Break Deviation": log.isOverbreak ? `YES (Over by ${log.overbreakMins} mins)` : 'NO',
+                    "Log Out Time": log.logout || "Active Session",
+                    "Regular Hours Worked": log.regHrs,
+                    "Overtime Hours": log.ot,
+                    "Undertime Hours": log.ut,
+                    "Compliance Status": audit.status,
+                    "Total Missed This Cycle": audit.totalAbsences,
+                    "Consecutive Absences": audit.maxConsecutive
+                };
+            });
+
+            const worksheet = XLSX.utils.json_to_sheet(exportPayload);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "GS Performance Logs");
+            XLSX.writeFile(workbook, `GS_Team_Attendance_Logs.xlsx`);
+        }
+
+        window.handleViewSwitchSelection = handleViewSwitchSelection;
+        window.toggleModal = toggleModal;
+        window.handleTerminalUserChange = handleTerminalUserChange;
+        window.handleClockAction = handleClockAction;
+        window.handleBreakAction = handleBreakAction;
+        window.filterEmployeeLogs = filterEmployeeLogs;
+        window.exportRosterDatabase = exportRosterDatabase;
+        window.logoutAdmin = logoutAdmin;
+        window.filterRosterScope = filterRosterScope;
+        window.renderAdminDashboard = renderAdminDashboard;
+        window.switchAdminSubView = switchAdminSubView;
+        window.exportAttendanceLogs = exportAttendanceLogs;
+        window.renderComplianceAudit = renderComplianceAudit;
+        window.handleEmployeeSelfRegister = handleEmployeeSelfRegister;
+        window.processAdminLogin = processAdminLogin;
+        window.cancelAdminLogin = cancelAdminLogin;
+        window.toggleAdminModalScreen = toggleAdminModalScreen;
+        window.handleCreateAdminUser = handleCreateAdminUser;
+        window.closeCustomAlert = closeCustomAlert;
+        window.deleteAttendanceLog = deleteAttendanceLog;
+        window.deleteEmployee = deleteEmployee;
+        window.handleRosterRemarksChange = handleRosterRemarksChange;
+        window.toggleLockUserOverride = toggleLockUserOverride;
+        window.openWarningNotice = openWarningNotice;
+        window.copyWarningLetterToClipboard = copyWarningLetterToClipboard;
+        window.filterAdminLogs = filterAdminLogs;
+        window.filterComplianceRange = filterComplianceRange;
+
+    </script>
+</body>
+</html>
